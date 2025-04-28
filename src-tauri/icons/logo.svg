@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:bx="https://boxy-svg.com">
+  <defs>
+    <filter id="shadow" bx:pinned="true">
+      <title>Drop Shadow</title>
+      <feDropShadow result="drop-shadow-0" in="SourceGraphic" style="flood-opacity: 0.3;"
+        stdDeviation="10" dx="0" dy="10" />
+    </filter>
+    <bx:guide x="-10" y="100" angle="90" />
+    <bx:guide x="100" y="-10" angle="0" />
+    <bx:guide x="924" y="-10" angle="0" />
+    <bx:guide x="-10" y="924" angle="90" />
+    <clipPath id="clip-0">
+      <path style="stroke-width: 3px; fill: rgb(255, 255, 255);"
+        d="M 100 724 L 100 300 C 100 185.001 170 99.995 300.026 100 L 724 99.995 C 854 100 924 185.001 924 300 L 924 724 C 924 839.001 854 923.995 724 924 L 300.026 924 C 170 924 100 839.001 100 724 Z">
+        <title>Icon Mask</title>
+      </path>
+    </clipPath>
+    <symbol id="symbol-0" viewBox="0 0 1024 1024" bx:pinned="true">
+      <title>App Icon Guides</title>
+      <g style="" transform="matrix(1, 0, 0, 1, 0, 0)">
+        <title>App Icon Guides</title>
+        <path style="fill: none; stroke-width: 3px;"
+          d="M 100 724.005 L 100 300.005 C 100 185.006 170 100 300.026 100.005 L 724 100 C 854 100.005 924 185.006 924 300.005 L 924 724.005 C 924 839.006 854 924 724 924.005 L 300.026 924.005 C 170 924.005 100 839.006 100 724.005 Z">
+          <title>Icon Grid Bounding Box</title>
+        </path>
+        <path
+          d="M310 176 L445 176 L580 311 L445 446 L310 446 L445 311 Z
+      M715 176 L580 176 L526 230 L595 296 Z
+      M715 446 L580 446 L526 392 L595 326 Z"
+          fill="#ff6b00"
+        />
+        <!-- <path
+          d="M580 390 Q600 450 520 560
+     M500 540 L520 560 L540 540"
+          fill="none"
+          stroke="#666666"
+          stroke-width="20"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        /> -->
+        <text
+          x="450"
+          y="570"
+          font-size="140"
+        >
+          ⬆
+        </text>
+        <text
+          x="200"
+          y="800"
+          font-family="Arial, sans-serif"
+          font-weight="bold"
+          font-size="260"
+        >
+          <tspan fill="#333333">p</tspan>
+          <tspan fill="rgb(152, 194, 34)" dx="-80">C</tspan>
+          <tspan fill="#333333" dx="-80">on</tspan>
+        </text>
+      </g>
+    </symbol>
+  </defs>
+  <g style="filter: url(#shadow);">
+    <title>App Icon (w/ Shadow)</title>
+    <g style="clip-path: url(#clip-0);">
+      <title>Background (Masked)</title>
+      <path style="stroke-width: 3px; fill: rgb(255, 255, 255);"
+        d="M 100 724 L 100 300 C 100 185.001 170 99.995 300.026 100 L 724 99.995 C 854 100 924 185.001 924 300 L 924 724 C 924 839.001 854 923.995 724 924 L 300.026 924 C 170 924 100 839.001 100 724 Z">
+        <title>Icon Shape</title>
+      </path>
+    </g>
+  </g>
+  <use width="1024" height="1024" transform="matrix(1, 0, 0, 1, 0.000001, 0.000001)"
+    style="pointer-events: none;" xlink:href="#symbol-0">
+    <title>App Icon Guides</title>
+  </use>
+</svg>

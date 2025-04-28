@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="/src/styles.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LexOffice OBX Importer</title>
+    <script type="module" src="/src/main.ts" defer></script>
+  </head>
+
+  <body>
+    <h1>LexOffice OBX Importer</h1>
+    <form>
+      <label for="obx" class="fileUpload">OBX Datei</label>
+      <div id="dropZone">
+        <p id="dropText">Drag & Drop oder anklicken</p>
+      </div>
+      <input id="obx" type="file" accept=".obx,application/obx+xml" />
+
+      <label>
+        API Key
+        <input id="apiKey" type="text" name="obx" />
+      </label>
+
+      <label>
+        Aufschlag in %
+        <input id="aufschlag" type="number" name="number" />
+      </label>
+
+      <div class="formactions">
+        <button id="showPreview" formaction="">Vorschau</button>
+        <input id="submit_short" type="submit" value="Importieren (kurz)" />
+        <input id="submit_long" type="submit" value="Importieren (lang)" />
+      </div>
+    </form>
+    <samp>
+      <pre id="preview"></pre>
+    </samp>
+  </body>
+</html>
