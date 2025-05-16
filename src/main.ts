@@ -44,12 +44,10 @@ dropZone?.addEventListener("drop", (ev) => {
 
   if (ev.dataTransfer?.items) {
     const item = ev.dataTransfer?.items[0];
-    console.log(item);
     if (item.kind === "file") {
       handleFileUpload(item.getAsFile()!);
     }
   } else if (ev.dataTransfer?.files) {
-    console.log(ev.dataTransfer?.files[0]);
     handleFileUpload(ev.dataTransfer?.files[0]);
   }
 });
@@ -102,8 +100,6 @@ async function handleFileUpload(file: File) {
     new DOMParser(),
     true
   );
-
-  console.log(longPayload);
 
   if (dropText) {
     dropText.textContent = file.name;

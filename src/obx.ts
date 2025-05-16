@@ -1,31 +1,40 @@
-let evaluator;
-let aufschlag;
+let evaluator: XPathEvaluator;
+let aufschlag: number;
 
-function iterate(xpathResult) {
-  const array = [];
-  let node;
+interface LineItem {
+  type: string;
+  name: string;
+  description: string;
+  quantity?: number;
+  unitName?: string;
+  unitPrice?: {
+    currency: string;
+    netAmount: string | number;
+    taxRatePercentage: number;
+  };
+}
+
+function iterate(xpathResult: XPathResult): Node[] {
+  const array: Node[] = [];
+  let node: Node | null;
   while ((node = xpathResult.iterateNext())) {
     array.push(node);
   }
   return array;
 }
 
-function get(xpath, context) {
+function get(xpath: string, context: Node): Node[] {
   return iterate(
-    evaluator.evaluate(
-      xpath,
-      context,
-      null,
-      0 // XPathResult.ANY_TYPE
-    )
+    evaluator.evaluate(xpath, context, null, XPathResult.ANY_TYPE, null)
   );
 }
 
-function getString(xpath, context) {
-  return get(xpath, context)[0]?.textContent?.replaceAll("\t", "").trim();
+function getString(xpath: string, context: Node): string | undefined {
+  const content = get(xpath, context)[0]?.textContent;
+  return content?.replace(/\t/g, "").trim();
 }
 
-function getPos(room) {
+function getPos(room: Node): [string, Node][] {
   return get("./setArticle", room).map((pos) => [
     `${getString("./label[@lang='de']", room)} | ${getString(
       "./description[@default='1']/text[@lang='de']",
@@ -35,43 +44,52 @@ function getPos(room) {
   ]);
 }
 
-function getPrefix(parsed) {
+function getPrefix(parsed: Document): [string, Node][] {
   const rooms = get("/cutBuffer/items/bskFolder", parsed);
 
   if (rooms.length) {
     return rooms.length === 1
       ? getPos(rooms[0])
-      : iterate(rooms).flatMap((room) => getPos);
+      : rooms.flatMap((room) => getPos(room));
   }
   return [["", get("/cutBuffer/items", parsed)[0]]];
 }
 
-function createSubItems(context, parent, includeDescription = true) {
+function createSubItems(
+  context: Node,
+  parent: string,
+  includeDescription = true
+): LineItem[] {
   const subItems = [
     parent,
     ...aggregateDuplicates(
-      get(`.//bskArticle`, context).map((node) => ({
-        name: `${getString(
-          `./description[@type='short']/text[@lang='de']`,
-          node
-        )} | ${getString(`./artNr[@type='final']`, node)}`,
-        unitPrice: {
-          netAmount: getString(
-            `./itemPrice[@type='sale'][@pd='1']/@value`,
+      get(`.//bskArticle`, context).map(
+        (node): LineItem => ({
+          type: "text",
+          name: `${getString(
+            `./description[@type='short']/text[@lang='de']`,
             node
-          ),
-        },
-        description: getString(
-          `./description[@type='features']/text[@lang='de']`,
-          node
-        ),
-        quantity: 1,
-      }))
+          )} | ${getString(`./artNr[@type='final']`, node)}`,
+          unitPrice: {
+            currency: "EUR",
+            netAmount:
+              getString(`./itemPrice[@type='sale'][@pd='1']/@value`, node) ||
+              "0",
+            taxRatePercentage: 19,
+          },
+          description:
+            getString(
+              `./description[@type='features']/text[@lang='de']`,
+              node
+            ) || "",
+          quantity: 1,
+        })
+      )
     ).map((item) =>
-      item.unitPrice.netAmount
+      item.unitPrice?.netAmount
         ? `${item.quantity}x ${item.name} | je ${(
-            (item.unitPrice.netAmount * aufschlag) /
-            item.quantity
+            (parseFloat(item.unitPrice.netAmount.toString()) * aufschlag) /
+            (item.quantity ?? 1)
           ).toFixed(2)} EUR${
             includeDescription ? `\n${item.description}\n` : ""
           }`
@@ -82,7 +100,7 @@ function createSubItems(context, parent, includeDescription = true) {
   if (subItems.join("\n").length >= 2000) {
     const divisor = Math.ceil(subItems.join("\n").length / 2000);
     const step = Math.ceil(subItems.length / divisor);
-    const list = [];
+    const list: LineItem[] = [];
     for (let i = 0; i < subItems.length; i += step) {
       list.push({
         type: "text",
@@ -104,7 +122,11 @@ function createSubItems(context, parent, includeDescription = true) {
     : [];
 }
 
-function createLineItem(context, prefix, includeDescription = true) {
+function createLineItem(
+  context: Node,
+  prefix: string,
+  includeDescription = true
+): LineItem[] {
   const name =
     getString("./artNr[@type='final']", context) +
     " | " +
@@ -152,14 +174,14 @@ function createLineItem(context, prefix, includeDescription = true) {
   ];
 }
 
-function aggregateDuplicates(lineItems) {
-  return lineItems.reduce((items, curr) => {
+function aggregateDuplicates(lineItems: LineItem[]): LineItem[] {
+  return lineItems.reduce<LineItem[]>((items, curr) => {
     const item = items.find(
       (item) =>
         item.name === curr.name &&
-        item.unitPrice.netAmount === curr.unitPrice.netAmount
+        item.unitPrice?.netAmount === curr.unitPrice?.netAmount
     );
-    if (item) {
+    if (item && item.quantity) {
       item.quantity += 1;
     } else {
       items.push(curr);
@@ -168,7 +190,7 @@ function aggregateDuplicates(lineItems) {
   }, []);
 }
 
-function getShippingCosts(parsed: Document) {
+function getShippingCosts(parsed: Document): LineItem {
   const volumes = getPrefix(parsed).flatMap(([, root]) =>
     get("./bskArticle", root)
       .flatMap(
@@ -177,8 +199,9 @@ function getShippingCosts(parsed: Document) {
           get(".//feature[@name='VOLUMEN']/@value", context) ??
           get(".//feature[@name='Volumen']/@value", context)
       )
-      .map((v) => parseFloat(v.value))
+      .map((v) => parseFloat((v as Attr).value || "0"))
   );
+
   const weights = getPrefix(parsed).flatMap(([, root]) =>
     get("./bskArticle", root)
       .flatMap(
@@ -187,7 +210,7 @@ function getShippingCosts(parsed: Document) {
           get(".//feature[@name='GEWICHT']/@value", context) ??
           get(".//feature[@name='Gewicht']/@value", context)
       )
-      .map((v) => parseFloat(v.value))
+      .map((v) => parseFloat((v as Attr).value || "0"))
   );
   const disclaimer = `Warenlieferungen erfolgen DDP (Delivered Duty Paid). Die Anlieferung umfasst den Transport in den Aufstellungsraum bzw. wenn dies nicht möglich ist, hinter die erste verschlossene Tür.`;
 
@@ -219,12 +242,11 @@ export function createPayload(
   aufschlagVal: number,
   parser: DOMParser,
   includeDescription: boolean,
-  xpath?: DOMParser
+  xpath?: XPathEvaluator
 ) {
   const parsed = parser.parseFromString(obx, "application/xml");
-  evaluator = xpath ?? parsed;
+  evaluator = xpath ?? new XPathEvaluator();
   aufschlag = isNaN(aufschlagVal) ? 1 : aufschlagVal;
-  console.log(aufschlag);
 
   const now = new Date();
   const expiration = new Date(
