@@ -1,5 +1,5 @@
 let evaluator: XPathEvaluator;
-let aufschlag: number;
+let mult: number;
 
 interface LineItem {
   type: string;
@@ -9,7 +9,7 @@ interface LineItem {
   unitName?: string;
   unitPrice?: {
     currency: string;
-    netAmount: string | number;
+    netAmount: number;
     taxRatePercentage: number;
   };
 }
@@ -23,15 +23,24 @@ function iterate(xpathResult: XPathResult): Node[] {
   return array;
 }
 
+function money(num: number): number {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
 function get(xpath: string, context: Node): Node[] {
   return iterate(
-    evaluator.evaluate(xpath, context, null, XPathResult.ANY_TYPE, null)
+    evaluator.evaluate(xpath, context, null, 0 /* XPathResult.ANY_TYPE */)
   );
 }
 
 function getString(xpath: string, context: Node): string | undefined {
   const content = get(xpath, context)[0]?.textContent;
   return content?.replace(/\t/g, "").trim();
+}
+
+function getNumber(xpath: string, context: Node): number {
+  const str = getString(xpath, context) ?? "0";
+  return money(parseFloat(str.replace(",", ".")));
 }
 
 function getPos(room: Node): [string, Node][] {
@@ -72,9 +81,10 @@ function createSubItems(
           )} | ${getString(`./artNr[@type='final']`, node)}`,
           unitPrice: {
             currency: "EUR",
-            netAmount:
-              getString(`./itemPrice[@type='sale'][@pd='1']/@value`, node) ||
-              "0",
+            netAmount: getNumber(
+              `./itemPrice[@type='sale'][@pd='1']/@value`,
+              node
+            ),
             taxRatePercentage: 19,
           },
           description:
@@ -88,7 +98,7 @@ function createSubItems(
     ).map((item) =>
       item.unitPrice?.netAmount
         ? `${item.quantity}x ${item.name} | je ${(
-            (parseFloat(item.unitPrice.netAmount.toString()) * aufschlag) /
+            (item.unitPrice.netAmount * mult) /
             (item.quantity ?? 1)
           ).toFixed(2)} EUR${
             includeDescription ? `\n${item.description}\n` : ""
@@ -132,11 +142,14 @@ function createLineItem(
     " | " +
     getString("./description[@type='short']/text[@lang='de']", context);
   const price =
-    parseFloat(
-      getString("./itemPrice[@type='sale'][@pd='1']/@value", context) ?? "0"
-    ) * aufschlag;
+    getNumber("./itemPrice[@type='sale'][@pd='1']/@value", context) * mult;
   const currency =
     getString("./itemPrice[@type='sale'][@pd='1']/@currency", context) ?? "EUR";
+  const subItems = createSubItems(
+    context,
+    `1x ${name} | je ${price.toFixed(2)} ${currency}\n`,
+    includeDescription
+  );
   return [
     {
       type: "custom",
@@ -147,30 +160,28 @@ function createLineItem(
           "./description[@type='features']/text[@lang='de']",
           context
         ) ??
-          getString("./description[@type='long']/text[@lang='de']", context)),
+          getString("./description[@type='long']/text[@lang='de']", context)) +
+        (!includeDescription && subItems.length
+          ? `\n\n${subItems[0].name}\n${subItems[0].description}`
+          : ""),
       quantity: 1,
       unitName: "Stk.",
       unitPrice: {
         currency: currency,
-        netAmount: (
+        netAmount: money(
           price +
-          get(
-            `.//bskArticle/itemPrice[@type='sale'][@pd='1']/@value`,
-            context
-          ).reduce(
-            (sum, curr) =>
-              sum + parseFloat(curr?.textContent?.trim() ?? "0") * aufschlag,
-            0
-          )
-        ).toFixed(2),
+            get(
+              `.//bskArticle/itemPrice[@type='sale'][@pd='1']/@value`,
+              context
+            ).reduce(
+              (sum, curr) => sum + parseFloat(curr?.textContent ?? "0") * mult,
+              0
+            )
+        ),
         taxRatePercentage: 19,
       },
     },
-    ...createSubItems(
-      context,
-      `1x ${name} | je ${price.toFixed(2)} ${currency}\n`,
-      includeDescription
-    ),
+    ...(includeDescription ? subItems : []),
   ];
 }
 
@@ -238,15 +249,13 @@ function getShippingCosts(parsed: Document): LineItem {
 }
 
 export function createPayload(
-  obx: string,
-  aufschlagVal: number,
-  parser: DOMParser,
+  parsed: Document,
+  multVal: number,
   includeDescription: boolean,
   xpath?: XPathEvaluator
 ) {
-  const parsed = parser.parseFromString(obx, "application/xml");
   evaluator = xpath ?? new XPathEvaluator();
-  aufschlag = isNaN(aufschlagVal) ? 1 : aufschlagVal;
+  mult = isNaN(multVal) ? 1 : multVal;
 
   const now = new Date();
   const expiration = new Date(

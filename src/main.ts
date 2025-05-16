@@ -1,4 +1,5 @@
 import { createPayload } from "./obx.ts";
+import { fetch } from "@tauri-apps/plugin-http";
 
 const dropZone: HTMLDivElement | null = document.querySelector("#dropZone");
 const dropText: HTMLParagraphElement | null =
@@ -87,19 +88,12 @@ function submit(payload: string) {
 }
 
 async function handleFileUpload(file: File) {
-  const aufschlag = 1 + parseFloat(aufschlagInput?.value ?? "0") / 100;
-  shortPayload = createPayload(
-    await file.text(),
-    aufschlag,
-    new DOMParser(),
-    false
-  );
-  longPayload = createPayload(
-    await file.text(),
-    aufschlag,
-    new DOMParser(),
-    true
-  );
+  const mult = 1 + parseFloat(aufschlagInput?.value ?? "0") / 100;
+  const parser = new DOMParser();
+  const parsed = parser.parseFromString(await file.text(), "application/xml");
+
+  shortPayload = createPayload(parsed, mult, false);
+  longPayload = createPayload(parsed, mult, true);
 
   if (dropText) {
     dropText.textContent = file.name;
