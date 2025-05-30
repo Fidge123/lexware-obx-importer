@@ -1,5 +1,10 @@
 import { createPayload } from "./obx.ts";
 import { fetch } from "@tauri-apps/plugin-http";
+import { getVersion } from "@tauri-apps/api/app";
+
+getVersion().then((appVersion) => {
+  document.querySelector("#version")!.textContent = appVersion;
+});
 
 const dropZone: HTMLDivElement | null = document.querySelector("#dropZone");
 const dropText: HTMLParagraphElement | null =

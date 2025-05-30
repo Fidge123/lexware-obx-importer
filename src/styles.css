@@ -61,3 +61,8 @@ samp {
   padding: var(--padding);
   width: calc(100% - 2 * var(--padding));
 }
+
+small {
+  padding: 0 8px;
+  font-size: 0.7rem;
+}
