@@ -12,13 +12,13 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.5.0",
-    "@tauri-apps/plugin-http": "~2",
-    "@tauri-apps/plugin-opener": "^2.2.6",
-    "@tauri-apps/plugin-updater": "~2"
+    "@tauri-apps/plugin-http": "~2.4.4",
+    "@tauri-apps/plugin-opener": "^2.2.7",
+    "@tauri-apps/plugin-updater": "~2.7.1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.5.0",
-    "@types/bun": "^1.2.13",
+    "@types/bun": "^1.2.15",
     "@xmldom/xmldom": "^0.9.8",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
