@@ -24,7 +24,16 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": "all",
     "icon": ["icons/icon.png", "icons/icon.icns", "icons/icon.ico"]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgxNEU4NDhBNTdDMkMxQ0QKUldUTndjSlhpb1JPZ2EwV2p6dVdiZ3djRDlpMUtuem03Y3R2U3lFcE5Od0xaaDE5NExpSHF1VWoK",
+      "endpoints": [
+        "https://github.com/Fidge123/lexoffice-obx-importer2/releases/latest/download/latest.json"
+      ]
+    }
   }
 }
