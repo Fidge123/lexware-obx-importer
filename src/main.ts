@@ -74,7 +74,7 @@ document
 function submit(payload: string) {
   return (ev: Event) => {
     ev.preventDefault();
-    fetch("https://api.lexoffice.io/v1/quotations", {
+    fetch("https://api.lexware.io/v1/quotations", {
       method: "POST",
       body: payload,
       headers: {
