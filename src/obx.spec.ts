@@ -5,11 +5,13 @@ import xpath from "xpath";
 
 import { createPayload } from "./obx.ts";
 
+const utf8 = { encoding: "utf-8" } as const;
+
 test("generate valid json for simple obx 1", async () => {
   const parser = new DOMParser();
-  const obx = await readFile("examples/01.obx", { encoding: "utf-8" });
-  const short = await readFile("examples/01-short.json", { encoding: "utf-8" });
-  const long = await readFile("examples/01-long.json", { encoding: "utf-8" });
+  const obx = await readFile("examples/01.obx", utf8);
+  const short = await readFile("examples/01-short.json", utf8);
+  const long = await readFile("examples/01-long.json", utf8);
 
   const parsed = parser.parseFromString(obx, "application/xml");
 
@@ -23,9 +25,9 @@ test("generate valid json for simple obx 1", async () => {
 
 test("generate valid json for another obx 2", async () => {
   const parser = new DOMParser();
-  const obx = await readFile("examples/02.obx", { encoding: "utf-8" });
-  const short = await readFile("examples/02-short.json", { encoding: "utf-8" });
-  const long = await readFile("examples/02-long.json", { encoding: "utf-8" });
+  const obx = await readFile("examples/02.obx", utf8);
+  const short = await readFile("examples/02-short.json", utf8);
+  const long = await readFile("examples/02-long.json", utf8);
 
   const parsed = parser.parseFromString(obx, "application/xml");
 
@@ -39,9 +41,9 @@ test("generate valid json for another obx 2", async () => {
 
 test("generate valid json for complex obx 3", async () => {
   const parser = new DOMParser();
-  const obx = await readFile("examples/03.obx", { encoding: "utf-8" });
-  const short = await readFile("examples/03-short.json", { encoding: "utf-8" });
-  const long = await readFile("examples/03-long.json", { encoding: "utf-8" });
+  const obx = await readFile("examples/03.obx", utf8);
+  const short = await readFile("examples/03-short.json", utf8);
+  const long = await readFile("examples/03-long.json", utf8);
   const parsed = parser.parseFromString(obx, "application/xml");
 
   expect(
@@ -54,9 +56,9 @@ test("generate valid json for complex obx 3", async () => {
 
 test("generate valid json for another complex obx 4", async () => {
   const parser = new DOMParser();
-  const obx = await readFile("examples/04.obx", { encoding: "utf-8" });
-  const short = await readFile("examples/04-short.json", { encoding: "utf-8" });
-  const long = await readFile("examples/04-long.json", { encoding: "utf-8" });
+  const obx = await readFile("examples/04.obx", utf8);
+  const short = await readFile("examples/04-short.json", utf8);
+  const long = await readFile("examples/04-long.json", utf8);
   const parsed = parser.parseFromString(obx, "application/xml");
 
   expect(
@@ -69,9 +71,9 @@ test("generate valid json for another complex obx 4", async () => {
 
 test("generate valid json for another complex obx 5", async () => {
   const parser = new DOMParser();
-  const obx = await readFile("examples/05.obx", { encoding: "utf-8" });
-  const short = await readFile("examples/05-short.json", { encoding: "utf-8" });
-  const long = await readFile("examples/05-long.json", { encoding: "utf-8" });
+  const obx = await readFile("examples/05.obx", utf8);
+  const short = await readFile("examples/05-short.json", utf8);
+  const long = await readFile("examples/05-long.json", utf8);
   const parsed = parser.parseFromString(obx, "application/xml");
 
   expect(
@@ -80,4 +82,65 @@ test("generate valid json for another complex obx 5", async () => {
   expect(
     JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
   ).toEqual(JSON.parse(long).lineItems);
+});
+
+test("generate valid json for another complex obx 6", async () => {
+  const parser = new DOMParser();
+  const obx = await readFile("examples/06.obx", utf8);
+  const short = await readFile("examples/06-short.json", utf8);
+  const long = await readFile("examples/06-long.json", utf8);
+  const parsed = parser.parseFromString(obx, "application/xml");
+
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
+  ).toEqual(JSON.parse(short).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long).lineItems);
+});
+
+test("generate valid json for another complex obx 7", async () => {
+  const parser = new DOMParser();
+  const obx = await readFile("examples/07.obx", utf8);
+  const short = await readFile("examples/07-short.json", utf8);
+  const long = await readFile("examples/07-long.json", utf8);
+  const parsed = parser.parseFromString(obx, "application/xml");
+
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
+  ).toEqual(JSON.parse(short).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long).lineItems);
+});
+
+test("generate valid json for another complex obx 7 with increased prices", async () => {
+  const parser = new DOMParser();
+  const obx = await readFile("examples/07.obx", utf8);
+  const short = JSON.parse(await readFile("examples/07-short.json", utf8));
+  const short5 = await readFile("examples/07-short-plus-five.json", utf8);
+  const long5 = await readFile("examples/07-long-plus-five.json", utf8);
+  const parsed = parser.parseFromString(obx, "application/xml");
+
+  expect.assertions(71);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1.05, false, xpath as any))
+      .lineItems
+  ).toEqual(JSON.parse(short5).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1.05, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long5).lineItems);
+
+  for (const [i, item] of JSON.parse(
+    createPayload(parsed as any, 1.05, false, xpath as any)
+  ).lineItems.entries()) {
+    if (item.name !== "Frachtkosten und Verbringung") {
+      expect(
+        Math.abs(
+          item.unitPrice.netAmount -
+            short.lineItems[i].unitPrice.netAmount * 1.05
+        )
+      ).toBeLessThan(0.008);
+    }
+  }
 });
