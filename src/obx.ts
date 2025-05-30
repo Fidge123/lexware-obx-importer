@@ -98,8 +98,7 @@ function createSubItems(
     ).map((item) =>
       item.unitPrice?.netAmount
         ? `${item.quantity}x ${item.name} | je ${(
-            (item.unitPrice.netAmount * mult) /
-            (item.quantity ?? 1)
+            item.unitPrice.netAmount * mult
           ).toFixed(2)} EUR${
             includeDescription ? `\n${item.description}\n` : ""
           }`
@@ -186,7 +185,7 @@ function createLineItem(
 }
 
 function aggregateDuplicates(lineItems: LineItem[]): LineItem[] {
-  return lineItems.reduce<LineItem[]>((items, curr) => {
+  return lineItems.reduce((items, curr) => {
     const item = items.find(
       (item) =>
         item.name === curr.name &&
@@ -198,7 +197,27 @@ function aggregateDuplicates(lineItems: LineItem[]): LineItem[] {
       items.push(curr);
     }
     return items;
-  }, []);
+  }, [] as LineItem[]);
+}
+
+function aggregateDuplicateLists(lineItems: LineItem[][]): LineItem[] {
+  return lineItems
+    .reduce((items, curr) => {
+      const item = items.find(
+        (item) =>
+          item[0].name === curr[0].name &&
+          item[0].unitPrice?.netAmount === curr[0].unitPrice?.netAmount
+      );
+      if (item && item[0].quantity) {
+        if (item.length < 2 || item[1].description === curr[1].description) {
+          item[0].quantity += 1;
+        }
+      } else {
+        items.push(curr);
+      }
+      return items;
+    }, [] as LineItem[][])
+    .flat();
 }
 
 function getShippingCosts(parsed: Document): LineItem {
@@ -269,13 +288,13 @@ export function createPayload(
     expirationDate: expiration.toISOString(),
     address: { name: "Testkunde", countryCode: "DE" },
     lineItems: [
-      // aggregateDuplicates(
-      ...getPrefix(parsed).flatMap(([prefix, root]) =>
-        get("./bskArticle", root).flatMap((context) =>
-          createLineItem(context, prefix, includeDescription)
+      ...aggregateDuplicateLists(
+        getPrefix(parsed).flatMap(([prefix, root]) =>
+          get("./bskArticle", root).map((context) =>
+            createLineItem(context, prefix, includeDescription)
+          )
         )
       ),
-      // ).flat(2),
       getShippingCosts(parsed),
     ],
     totalPrice: { currency: "EUR" },

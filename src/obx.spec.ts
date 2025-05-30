@@ -75,9 +75,7 @@ test("generate valid json for another complex obx 5", async () => {
   const parsed = parser.parseFromString(obx, "application/xml");
 
   expect(
-    JSON.parse(
-      createPayload(parsed as any, 1, false, xpath as any)
-    ).lineItems.slice(0, 2)
+    JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
   ).toEqual(JSON.parse(short).lineItems);
   // expect(
   //   JSON.parse(
