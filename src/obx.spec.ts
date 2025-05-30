@@ -16,9 +16,9 @@ test("generate valid json for simple obx 1", async () => {
   expect(
     JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
   ).toEqual(JSON.parse(short).lineItems);
-  // expect(
-  //   JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
-  // ).toEqual(JSON.parse(long).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long).lineItems);
 });
 
 test("generate valid json for another obx 2", async () => {
@@ -32,9 +32,9 @@ test("generate valid json for another obx 2", async () => {
   expect(
     JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
   ).toEqual(JSON.parse(short).lineItems);
-  // expect(
-  //   JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
-  // ).toEqual(JSON.parse(long).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long).lineItems);
 });
 
 test("generate valid json for complex obx 3", async () => {
@@ -47,9 +47,9 @@ test("generate valid json for complex obx 3", async () => {
   expect(
     JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
   ).toEqual(JSON.parse(short).lineItems);
-  // expect(
-  //   JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
-  // ).toEqual(JSON.parse(long).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long).lineItems);
 });
 
 test("generate valid json for another complex obx 4", async () => {
@@ -62,9 +62,9 @@ test("generate valid json for another complex obx 4", async () => {
   expect(
     JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
   ).toEqual(JSON.parse(short).lineItems);
-  // expect(
-  //   JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
-  // ).toEqual(JSON.parse(long).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long).lineItems);
 });
 
 test("generate valid json for another complex obx 5", async () => {
@@ -77,9 +77,7 @@ test("generate valid json for another complex obx 5", async () => {
   expect(
     JSON.parse(createPayload(parsed as any, 1, false, xpath as any)).lineItems
   ).toEqual(JSON.parse(short).lineItems);
-  // expect(
-  //   JSON.parse(
-  //     createPayload(parsed as any, 1, true, xpath as any)
-  //   ).lineItems.slice(0, 2)
-  // ).toEqual(JSON.parse(long).lineItems);
+  expect(
+    JSON.parse(createPayload(parsed as any, 1, true, xpath as any)).lineItems
+  ).toEqual(JSON.parse(long).lineItems);
 });

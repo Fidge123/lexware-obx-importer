@@ -114,7 +114,10 @@ function createSubItems(
       list.push({
         type: "text",
         name: `Bestehend aus${i > 0 ? " (Fortsetzung):" : ":"}`,
-        description: subItems.slice(i, i + step).join("\n"),
+        description: subItems
+          .slice(i, i + step)
+          .join("\n")
+          .trim(),
       });
     }
     return list;
@@ -125,7 +128,7 @@ function createSubItems(
         {
           type: "text",
           name: "Bestehend aus:",
-          description: subItems.join("\n"),
+          description: subItems.join("\n").trim(),
         },
       ]
     : [];
