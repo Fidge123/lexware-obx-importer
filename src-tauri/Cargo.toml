@@ -1,7 +1,7 @@
 [package]
-name = "lexoffice-obx-importer"
+name = "lexware-obx-importer"
 version = "0.1.0"
-description = "Import all products from an OBX as an offer to Lexoffice"
+description = "Import all products from an OBX as an offer to lexware"
 authors = ["you"]
 edition = "2021"
 
@@ -11,7 +11,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "lexoffice_obx_importer_lib"
+name = "lexware_obx_importer_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

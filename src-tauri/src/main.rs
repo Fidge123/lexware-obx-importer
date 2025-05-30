@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    lexoffice_obx_importer_lib::run()
+    lexware_obx_importer_lib::run()
 }
