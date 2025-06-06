@@ -98,7 +98,7 @@ function submit(payload: string) {
       },
     })
       .then((response) => {
-        if (response.status === 200) {
+        if (response.status >= 200 || response.status < 300) {
           dropText!.textContent = originalDropText;
           shortPayload = "";
           longPayload = "";
