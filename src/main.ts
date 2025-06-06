@@ -96,8 +96,21 @@ function submit(payload: string) {
         Accept: "application/json",
         Authorization: "Bearer " + apiKey,
       },
-    });
-    // }).then(() => location.reload());
+    })
+      .then((response) => {
+        if (response.status === 200) {
+          dropText!.textContent = originalDropText;
+          shortPayload = "";
+          longPayload = "";
+        } else {
+          response.text().then((text) => {
+            dropText!.textContent = "Fehler: " + text;
+          });
+        }
+      })
+      .catch((error) => {
+        dropText!.textContent = "Fehler: " + error.message;
+      });
   };
 }
 
