@@ -1,4 +1,5 @@
 import { createPayload } from "./obx.ts";
+import { listen } from "./util.ts";
 import { fetch } from "@tauri-apps/plugin-http";
 import { getVersion } from "@tauri-apps/api/app";
 import { readTextFile } from "@tauri-apps/plugin-fs";
@@ -8,18 +9,18 @@ getVersion().then((appVersion) => {
   document.querySelector("#version")!.textContent = appVersion;
 });
 
-const dropZone: HTMLDivElement | null = document.querySelector("#dropZone");
 const dropText: HTMLParagraphElement | null =
   document.querySelector("#dropText");
 const originalDropText = dropText?.textContent || "Datei auswählen";
 const preview: HTMLPreElement | null = document.querySelector("#preview");
 const apiKeyInput: HTMLInputElement | null = document.querySelector("#apiKey");
 const fileUpload: HTMLInputElement | null = document.querySelector("#obx");
+const longSelect: HTMLSelectElement | null = document.querySelector("#isLong");
+const groupSelect: HTMLSelectElement | null = document.querySelector("#group");
 const aufschlagInput: HTMLInputElement | null =
   document.querySelector("#aufschlag");
 
-let shortPayload: string;
-let longPayload: string;
+let payload = "{}";
 let apiKey = localStorage.getItem("apiKey") ?? "";
 
 if (apiKeyInput) {
@@ -32,29 +33,28 @@ if (apiKeyInput) {
   });
 }
 
-fileUpload?.addEventListener("change", () => {
-  const file = fileUpload.files?.[0];
-  if (file) {
-    handleFileUpload(file.name, file.text());
-  }
-});
+listen("#dropZone", "click", () => fileUpload?.click());
+listen("#dropZone", "drop", (ev) => ev.preventDefault());
+listen("#dropZone", "dragover", (ev) => ev.preventDefault());
 
-aufschlagInput?.addEventListener("change", () => {
+async function processFile() {
   const file = fileUpload?.files?.[0];
   if (file) {
-    handleFileUpload(file.name, file.text());
+    await handleFileUpload(file.name, file.text());
   }
-});
+  updatePreview();
+}
 
-dropZone?.addEventListener("click", () => fileUpload?.click());
+function updatePreview() {
+  if (preview) {
+    preview.textContent = JSON.stringify(JSON.parse(payload), null, 2);
+  }
+}
 
-dropZone?.addEventListener("drop", (ev) => {
-  ev.preventDefault();
-});
-
-dropZone?.addEventListener("dragover", (ev) => {
-  ev.preventDefault();
-});
+fileUpload?.addEventListener("change", processFile);
+aufschlagInput?.addEventListener("change", processFile);
+longSelect?.addEventListener("change", processFile);
+groupSelect?.addEventListener("change", processFile);
 
 getCurrentWebview().onDragDropEvent((ev) => {
   if (ev.payload.type === "over" && dropText) {
@@ -64,6 +64,7 @@ getCurrentWebview().onDragDropEvent((ev) => {
       ev.payload.paths[0]?.split("/").pop() || "Dateiname unbekannt",
       readTextFile(ev.payload.paths[0])
     );
+    updatePreview();
   } else {
     if (dropText) {
       dropText.textContent = originalDropText;
@@ -71,19 +72,7 @@ getCurrentWebview().onDragDropEvent((ev) => {
   }
 });
 
-document.querySelector("#showPreview")?.addEventListener("click", (ev) => {
-  ev.preventDefault();
-  if (preview) {
-    preview.textContent = JSON.stringify(JSON.parse(longPayload), null, 2);
-  }
-});
-
-document
-  .querySelector("#submit_short")
-  ?.addEventListener("click", (ev) => submit(shortPayload)(ev));
-document
-  .querySelector("#submit_long")
-  ?.addEventListener("click", (ev) => submit(longPayload)(ev));
+listen("#submit", "click", (ev) => submit(payload)(ev));
 
 function submit(payload: string) {
   return (ev: Event) => {
@@ -100,8 +89,7 @@ function submit(payload: string) {
       .then((response) => {
         if (response.status >= 200 || response.status < 300) {
           dropText!.textContent = originalDropText;
-          shortPayload = "";
-          longPayload = "";
+          payload = "";
         } else {
           response.text().then((text) => {
             dropText!.textContent = "Fehler: " + text;
@@ -122,8 +110,12 @@ async function handleFileUpload(
   const parser = new DOMParser();
   const parsed = parser.parseFromString(await content, "application/xml");
 
-  shortPayload = createPayload(parsed, mult, false);
-  longPayload = createPayload(parsed, mult, true);
+  payload = createPayload(
+    parsed,
+    mult,
+    longSelect?.value === "long",
+    groupSelect?.value === "y"
+  );
 
   if (dropText) {
     dropText.textContent = name;

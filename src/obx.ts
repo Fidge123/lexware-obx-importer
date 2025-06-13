@@ -1,12 +1,12 @@
 let evaluator: XPathEvaluator;
 let mult: number;
 
-interface LineItem {
-  type: string;
+export interface LineItem {
+  type: "text" | "custom";
   name: string;
   description: string;
   quantity?: number;
-  unitName?: string;
+  unitName?: "Stk." | "Psch";
   unitPrice?: {
     currency: string;
     netAmount: number;
@@ -203,7 +203,13 @@ function aggregateDuplicates(lineItems: LineItem[]): LineItem[] {
   }, [] as LineItem[]);
 }
 
-function aggregateDuplicateLists(lineItems: LineItem[][]): LineItem[] {
+function aggregateDuplicateLists(
+  lineItems: LineItem[][],
+  groupLineItems: boolean
+): LineItem[] {
+  if (!groupLineItems) {
+    return lineItems.flat();
+  }
   return lineItems
     .reduce((items, curr) => {
       const item = items.find(
@@ -274,6 +280,7 @@ export function createPayload(
   parsed: Document,
   multVal: number,
   includeDescription: boolean,
+  groupLineItems: boolean,
   xpath?: XPathEvaluator
 ) {
   evaluator = xpath ?? new XPathEvaluator();
@@ -296,7 +303,8 @@ export function createPayload(
           get("./bskArticle", root).map((context) =>
             createLineItem(context, prefix, includeDescription)
           )
-        )
+        ),
+        groupLineItems
       ),
       getShippingCosts(parsed),
     ],

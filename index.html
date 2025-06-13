@@ -28,10 +28,31 @@
         <input id="aufschlag" type="number" name="number" />
       </label>
 
+      <!-- <label>
+        Kunde
+        <select id="kunde">
+          <option value="test" selected>Testkunde</option>
+        </select>
+      </label> -->
+
+      <label>
+        Gleiche Zeilen gruppieren?
+        <select id="group">
+          <option value="y" selected>Ja</option>
+          <option value="n">Nein</option>
+        </select>
+      </label>
+
+      <label>
+        Kurzform / Langform
+        <select id="isLong">
+          <option value="short">Kurzform</option>
+          <option value="long" selected>Langform</option>
+        </select>
+      </label>
+
       <div class="formactions">
-        <button id="showPreview" formaction="">Vorschau</button>
-        <input id="submit_short" type="submit" value="Importieren (kurz)" />
-        <input id="submit_long" type="submit" value="Importieren (lang)" />
+        <input id="submit" type="submit" value="Importieren" />
       </div>
     </form>
     <samp>

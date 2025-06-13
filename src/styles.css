@@ -16,7 +16,8 @@ label {
   justify-content: space-between;
 }
 
-label input {
+label input,
+label select {
   flex-grow: 1;
   max-width: 240px;
 }
