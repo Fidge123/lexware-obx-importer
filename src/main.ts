@@ -1,10 +1,11 @@
 import { createPayload } from "./obx.ts";
 import { listen } from "./util.ts";
-import { fetch } from "@tauri-apps/plugin-http";
 import { getVersion } from "@tauri-apps/api/app";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { Quotation } from "./types.ts";
+import { createQuotation } from "./api.ts";
 
 getVersion().then((appVersion) => {
   document.querySelector("#version")!.textContent = appVersion;
@@ -20,8 +21,9 @@ const longSelect: HTMLSelectElement | null = document.querySelector("#isLong");
 const groupSelect: HTMLSelectElement | null = document.querySelector("#group");
 const aufschlagInput: HTMLInputElement | null =
   document.querySelector("#aufschlag");
+const submitButton: HTMLInputElement | null = document.querySelector("#submit");
 
-let payload = "{}";
+let payload: Quotation | undefined;
 let apiKey = localStorage.getItem("apiKey") ?? "";
 
 if (apiKeyInput) {
@@ -31,9 +33,8 @@ if (apiKeyInput) {
       apiKey = ev.target.value;
       localStorage.setItem("apiKey", apiKey);
 
-      if (apiKey && payload) {
-        (document.getElementById("submit") as HTMLInputElement).disabled =
-          false;
+      if (apiKey && payload && submitButton) {
+        submitButton.disabled = false;
       }
     }
   });
@@ -53,7 +54,7 @@ async function processFile() {
 
 function updatePreview() {
   if (preview) {
-    preview.textContent = JSON.stringify(JSON.parse(payload), null, 2);
+    preview.textContent = JSON.stringify(payload, null, 2);
   }
 }
 
@@ -78,40 +79,30 @@ getCurrentWebview().onDragDropEvent((ev) => {
   }
 });
 
-listen("#submit", "click", (ev) => submit(payload)(ev));
+listen("#submit", "click", (ev) => submit(ev));
 
-function submit(payload: string) {
-  return async (ev: Event) => {
-    ev.preventDefault();
+async function submit(ev: Event) {
+  ev.preventDefault();
+
+  if (!payload || !apiKey) {
+    dropText!.textContent =
+      "Bitte laden Sie eine Datei hoch und geben Sie Ihren API-Schlüssel ein.";
+  } else {
     try {
-      const response = await fetch("https://api.lexware.io/v1/quotations", {
-        method: "POST",
-        body: payload,
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: "Bearer " + apiKey,
-        },
-      });
-
-      if (response.status >= 200 || response.status < 300) {
-        dropText!.textContent = originalDropText;
-        const data = await response.json();
-        payload = "";
-        (ev.target as HTMLInputElement).disabled = true;
+      const data = await createQuotation(payload, apiKey);
+      dropText!.textContent = originalDropText;
+      payload = undefined;
+      (ev.target as HTMLInputElement).disabled = true;
+      if (data.id) {
         await openUrl(
           `https://app.lexware.de/permalink/quotations/edit/${data.id}`
         );
-      } else {
-        response.text().then((text) => {
-          dropText!.textContent = "Fehler: " + text;
-        });
       }
     } catch (error: any) {
       dropText!.textContent =
         "Fehler: " + (error?.message ?? JSON.stringify(error));
     }
-  };
+  }
 }
 
 async function handleFileUpload(
@@ -129,8 +120,8 @@ async function handleFileUpload(
     groupSelect?.value === "y"
   );
 
-  if (payload && apiKey) {
-    (document.getElementById("submit") as HTMLInputElement).disabled = false;
+  if (payload && apiKey && submitButton) {
+    submitButton.disabled = false;
   }
 
   if (dropText) {

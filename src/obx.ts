@@ -1,18 +1,13 @@
+import type {
+  LineItem,
+  Quotation,
+  TextLineItem,
+  CustomLineItem,
+  SubLineItem,
+} from "./types";
+
 let evaluator: XPathEvaluator;
 let mult: number;
-
-export interface LineItem {
-  type: "text" | "custom";
-  name: string;
-  description: string;
-  quantity?: number;
-  unitName?: "Stk." | "Psch";
-  unitPrice?: {
-    currency: string;
-    netAmount: number;
-    taxRatePercentage: number;
-  };
-}
 
 function iterate(xpathResult: XPathResult): Node[] {
   const array: Node[] = [];
@@ -68,24 +63,21 @@ function createSubItems(
   context: Node,
   parent: string,
   includeDescription = true
-): LineItem[] {
+): TextLineItem[] {
   const subItems = [
     parent,
     ...aggregateDuplicates(
       get(`.//bskArticle`, context).map(
-        (node): LineItem => ({
-          type: "text",
+        (node): SubLineItem => ({
           name: `${getString(
             `./description[@type='short']/text[@lang='de']`,
             node
           )} | ${getString(`./artNr[@type='final']`, node)}`,
           unitPrice: {
-            currency: "EUR",
             netAmount: getNumber(
               `./itemPrice[@type='sale'][@pd='1']/@value`,
               node
             ),
-            taxRatePercentage: 19,
           },
           description:
             getString(
@@ -109,7 +101,7 @@ function createSubItems(
   if (subItems.join("\n").length >= 2000) {
     const divisor = Math.ceil(subItems.join("\n").length / 2000);
     const step = Math.ceil(subItems.length / divisor);
-    const list: LineItem[] = [];
+    const list = [] as TextLineItem[];
     for (let i = 0; i < subItems.length; i += step) {
       list.push({
         type: "text",
@@ -138,7 +130,7 @@ function createLineItem(
   context: Node,
   prefix: string,
   includeDescription = true
-): LineItem[] {
+): [CustomLineItem, ...Array<TextLineItem>] {
   const name =
     getString("./artNr[@type='final']", context) +
     " | " +
@@ -187,7 +179,9 @@ function createLineItem(
   ];
 }
 
-function aggregateDuplicates(lineItems: LineItem[]): LineItem[] {
+function aggregateDuplicates<T extends CustomLineItem | SubLineItem>(
+  lineItems: T[]
+): T[] {
   return lineItems.reduce((items, curr) => {
     const item = items.find(
       (item) =>
@@ -200,11 +194,11 @@ function aggregateDuplicates(lineItems: LineItem[]): LineItem[] {
       items.push(curr);
     }
     return items;
-  }, [] as LineItem[]);
+  }, [] as T[]);
 }
 
 function aggregateDuplicateLists(
-  lineItems: LineItem[][],
+  lineItems: [CustomLineItem, ...Array<TextLineItem>][],
   groupLineItems: boolean
 ): LineItem[] {
   if (!groupLineItems) {
@@ -225,7 +219,7 @@ function aggregateDuplicateLists(
         items.push(curr);
       }
       return items;
-    }, [] as LineItem[][])
+    }, [] as [CustomLineItem, ...Array<TextLineItem>][])
     .flat();
 }
 
@@ -282,7 +276,7 @@ export function createPayload(
   includeDescription: boolean,
   groupLineItems: boolean,
   xpath?: XPathEvaluator
-) {
+): Quotation {
   evaluator = xpath ?? new XPathEvaluator();
   mult = isNaN(multVal) ? 1 : multVal;
 
@@ -293,7 +287,7 @@ export function createPayload(
     now.getDate() + 14
   );
 
-  return JSON.stringify({
+  return {
     voucherDate: now.toISOString(),
     expirationDate: expiration.toISOString(),
     address: { name: "Testkunde", countryCode: "DE" },
@@ -310,5 +304,5 @@ export function createPayload(
     ],
     totalPrice: { currency: "EUR" },
     taxConditions: { taxType: "net" },
-  });
+  };
 }

@@ -1,4 +1,4 @@
-import type { LineItem } from "./obx";
+import type { LineItemWithType } from "./types";
 
 export function listen(
   selector: string,
@@ -15,7 +15,7 @@ export function listen(
   }
 }
 
-export function count(lineItems: LineItem[]): number {
+export function count(lineItems: LineItemWithType[]): number {
   return lineItems.reduce(
     (count, item) => count + (item.type === "custom" ? item.quantity || 1 : 0),
     0
