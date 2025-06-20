@@ -48,3 +48,57 @@ export interface Quotation {
     taxType: "net" | "gross" | "vatfree";
   };
 }
+
+export interface Address {
+  contactId?: string;
+  name?: string;
+  supplement?: string;
+  street?: string;
+  city?: string;
+  zip?: string;
+  countryCode?: string;
+}
+
+export interface Contact {
+  id: string;
+  roles:
+    | {
+        customer: true;
+      }
+    | {
+        vendor: true;
+      };
+  company?: {
+    name: string;
+    taxNumber?: string;
+    vatRegistrationId?: string;
+  };
+  person?: {
+    firstName?: string;
+    lastName?: string;
+    salutation?: string;
+    title?: string;
+  };
+  addresses?: {
+    billing?: Address[];
+    shipping?: Address[];
+  };
+  archived?: boolean;
+}
+
+export interface ContactsResponse {
+  content: Contact[];
+  first: boolean;
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  numberOfElements: number;
+  size: number;
+  number: number;
+}
+
+export interface ContactListItem {
+  id: string;
+  name: string;
+  address?: Address;
+}

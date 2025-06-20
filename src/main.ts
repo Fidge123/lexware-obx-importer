@@ -5,7 +5,7 @@ import { readTextFile } from "@tauri-apps/plugin-fs";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { Quotation } from "./types.ts";
-import { createQuotation } from "./api.ts";
+import { createQuotation, getContacts } from "./api.ts";
 
 getVersion().then((appVersion) => {
   document.querySelector("#version")!.textContent = appVersion;
@@ -22,9 +22,19 @@ const groupSelect: HTMLSelectElement | null = document.querySelector("#group");
 const aufschlagInput: HTMLInputElement | null =
   document.querySelector("#aufschlag");
 const submitButton: HTMLInputElement | null = document.querySelector("#submit");
+const customerInput: HTMLInputElement | null =
+  document.querySelector("#customer");
+const customerDropdown: HTMLElement | null =
+  document.querySelector("#customer-dropdown");
+const customerList: HTMLUListElement | null =
+  document.querySelector("#customer-list");
+const loadingIndicator: HTMLElement | null =
+  document.querySelector(".loading-indicator");
 
 let payload: Quotation | undefined;
 let apiKey = localStorage.getItem("apiKey") ?? "";
+let selectedContactId: string | null = null;
+let debounceTimer: NodeJS.Timeout | null = null;
 
 if (apiKeyInput) {
   apiKeyInput.value = apiKey;
@@ -53,7 +63,16 @@ async function processFile() {
 }
 
 function updatePreview() {
-  if (preview) {
+  if (preview && payload) {
+    if (selectedContactId) {
+      payload.address = { contactId: selectedContactId };
+    } else if (customerInput?.value) {
+      payload.address = {
+        name: customerInput.value,
+        countryCode: "DE",
+      };
+    }
+
     preview.textContent = JSON.stringify(payload, null, 2);
   }
 }
@@ -88,6 +107,15 @@ async function submit(ev: Event) {
     dropText!.textContent =
       "Bitte laden Sie eine Datei hoch und geben Sie Ihren API-Schlüssel ein.";
   } else {
+    if (selectedContactId) {
+      payload.address = { contactId: selectedContactId };
+    } else if (customerInput?.value) {
+      payload.address = {
+        name: customerInput.value,
+        countryCode: "DE",
+      };
+    }
+
     try {
       const data = await createQuotation(payload, apiKey);
       dropText!.textContent = originalDropText;
@@ -95,7 +123,7 @@ async function submit(ev: Event) {
       (ev.target as HTMLInputElement).disabled = true;
       if (data.id) {
         await openUrl(
-          `https://app.lexware.de/permalink/quotations/edit/${data.id}`
+          `https://app.lexware.de/permalink/quotations/view/${data.id}`
         );
       }
     } catch (error: any) {
@@ -103,6 +131,97 @@ async function submit(ev: Event) {
         "Fehler: " + (error?.message ?? JSON.stringify(error));
     }
   }
+}
+
+if (customerInput) {
+  customerInput.addEventListener("focus", async () => {
+    if (apiKey) {
+      showCustomerDropdown();
+      await fetchAndDisplayCustomers();
+    }
+  });
+
+  customerInput.addEventListener("input", () => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+
+    debounceTimer = setTimeout(() => {
+      selectedContactId = null;
+      updatePreview();
+      fetchAndDisplayCustomers();
+    }, 300);
+  });
+
+  document.addEventListener("click", (event) => {
+    if (
+      event.target !== customerInput &&
+      event.target !== customerDropdown &&
+      !customerDropdown?.contains(event.target as Node)
+    ) {
+      hideCustomerDropdown();
+    }
+  });
+}
+
+async function fetchAndDisplayCustomers(): Promise<void> {
+  if (!customerList || !loadingIndicator || !apiKey) return;
+
+  try {
+    customerList.innerHTML = "";
+    const filter = customerInput?.value.trim();
+
+    loadingIndicator.style.display = "block";
+    const customers = await getContacts(
+      apiKey,
+      filter && filter.length >= 3 ? filter : undefined
+    );
+    loadingIndicator.style.display = "none";
+
+    if (customers.length === 0) {
+      const li = document.createElement("li");
+      li.textContent = "Keine Ergebnisse gefunden";
+      customerList.appendChild(li);
+    } else if (
+      customers.length === 1 &&
+      selectedContactId === customers[0].id
+    ) {
+      hideCustomerDropdown();
+      return;
+    } else {
+      customers.forEach((customer) => {
+        const li = document.createElement("li");
+        li.textContent = customer.name;
+        li.dataset.id = customer.id;
+
+        li.addEventListener("click", () => {
+          if (customerInput) {
+            customerInput.value = customer.name;
+            selectedContactId = customer.id;
+            updatePreview();
+            hideCustomerDropdown();
+          }
+        });
+
+        customerList.appendChild(li);
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching customers:", error);
+    loadingIndicator.style.display = "none";
+
+    const li = document.createElement("li");
+    li.textContent = "Fehler beim Laden der Kunden";
+    customerList.appendChild(li);
+  }
+}
+
+function showCustomerDropdown(): void {
+  customerDropdown?.classList.add("active");
+}
+
+function hideCustomerDropdown(): void {
+  customerDropdown?.classList.remove("active");
 }
 
 async function handleFileUpload(

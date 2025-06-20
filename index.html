@@ -28,10 +28,16 @@
         <input id="aufschlag" type="number" value="0" />
       </label>
 
-      <!-- <label>
+      <label>
         Kunde
-        <input id="customer" type="text" value="Testkunde" />
-      </label> -->
+        <div class="customer-select-container">
+          <input id="customer" type="text" placeholder="Testkunde" autocomplete="off" />
+          <div id="customer-dropdown" class="customer-dropdown">
+            <div class="loading-indicator" style="display:none;">Lädt...</div>
+            <ul id="customer-list"></ul>
+          </div>
+        </div>
+      </label>
 
       <label>
         Gleiche Zeilen gruppieren?
