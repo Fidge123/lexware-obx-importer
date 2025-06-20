@@ -3,6 +3,7 @@ import { listen } from "./util.ts";
 import { fetch } from "@tauri-apps/plugin-http";
 import { getVersion } from "@tauri-apps/api/app";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 getVersion().then((appVersion) => {
@@ -29,6 +30,11 @@ if (apiKeyInput) {
     if (ev.target instanceof HTMLInputElement) {
       apiKey = ev.target.value;
       localStorage.setItem("apiKey", apiKey);
+
+      if (apiKey && payload) {
+        (document.getElementById("submit") as HTMLInputElement).disabled =
+          false;
+      }
     }
   });
 }
@@ -75,30 +81,36 @@ getCurrentWebview().onDragDropEvent((ev) => {
 listen("#submit", "click", (ev) => submit(payload)(ev));
 
 function submit(payload: string) {
-  return (ev: Event) => {
+  return async (ev: Event) => {
     ev.preventDefault();
-    fetch("https://api.lexware.io/v1/quotations", {
-      method: "POST",
-      body: payload,
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: "Bearer " + apiKey,
-      },
-    })
-      .then((response) => {
-        if (response.status >= 200 || response.status < 300) {
-          dropText!.textContent = originalDropText;
-          payload = "";
-        } else {
-          response.text().then((text) => {
-            dropText!.textContent = "Fehler: " + text;
-          });
-        }
-      })
-      .catch((error) => {
-        dropText!.textContent = "Fehler: " + error.message;
+    try {
+      const response = await fetch("https://api.lexware.io/v1/quotations", {
+        method: "POST",
+        body: payload,
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: "Bearer " + apiKey,
+        },
       });
+
+      if (response.status >= 200 || response.status < 300) {
+        dropText!.textContent = originalDropText;
+        const data = await response.json();
+        payload = "";
+        (ev.target as HTMLInputElement).disabled = true;
+        await openUrl(
+          `https://app.lexware.de/permalink/quotations/edit/${data.id}`
+        );
+      } else {
+        response.text().then((text) => {
+          dropText!.textContent = "Fehler: " + text;
+        });
+      }
+    } catch (error: any) {
+      dropText!.textContent =
+        "Fehler: " + (error?.message ?? JSON.stringify(error));
+    }
   };
 }
 
@@ -116,6 +128,10 @@ async function handleFileUpload(
     longSelect?.value === "long",
     groupSelect?.value === "y"
   );
+
+  if (payload && apiKey) {
+    (document.getElementById("submit") as HTMLInputElement).disabled = false;
+  }
 
   if (dropText) {
     dropText.textContent = name;

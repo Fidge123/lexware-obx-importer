@@ -36,6 +36,11 @@ input {
   border: 1px solid black;
 }
 
+input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 #obx {
   display: none;
 }
