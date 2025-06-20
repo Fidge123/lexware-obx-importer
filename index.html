@@ -12,11 +12,15 @@
     <h1>Lexware OBX Importer<small id="version"></small></h1>
 
     <form>
-      <label for="obx" class="fileUpload">OBX Datei</label>
       <div id="dropZone">
         <p id="dropText">Drag & Drop oder anklicken</p>
       </div>
-      <input id="obx" type="file" accept=".obx,application/obx+xml" />
+      <input
+        id="obx"
+        aria-label="OBX Datei"
+        type="file"
+        accept=".obx,application/obx+xml"
+      />
 
       <label>
         API Key
@@ -31,27 +35,36 @@
       <label>
         Kunde
         <div class="customer-select-container">
-          <input id="customer" type="text" placeholder="Testkunde" autocomplete="off" />
+          <input
+            id="customer"
+            type="text"
+            placeholder="Testkunde"
+            autocomplete="off"
+          />
           <div id="customer-dropdown" class="customer-dropdown">
-            <div class="loading-indicator" style="display:none;">Lädt...</div>
+            <div class="loading-indicator" style="display: none">Lädt...</div>
             <ul id="customer-list"></ul>
           </div>
         </div>
       </label>
 
       <label>
-        Gleiche Zeilen gruppieren?
+        Produkte mit gleichem Preis und Text
         <select id="group">
-          <option value="y" selected>Ja</option>
-          <option value="n">Nein</option>
+          <option value="y" selected>
+            Gruppiert (eine Zeile mit Stückzahl > 1)
+          </option>
+          <option value="n">
+            Nicht Gruppiert (je eine Zeile mit Stückzahl = 1)
+          </option>
         </select>
       </label>
 
       <label>
-        Kurzform / Langform
+        Beschreibungen
         <select id="isLong">
-          <option value="short">Kurzform</option>
-          <option value="long" selected>Langform</option>
+          <option value="short">Kurzform in Beschreibung des Produkts</option>
+          <option value="long" selected>Langform in extra Zeile(n)</option>
         </select>
       </label>
 
