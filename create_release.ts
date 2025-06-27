@@ -10,15 +10,12 @@ const execAsync = promisify(exec);
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const REPO_OWNER = "Fidge123";
 const REPO_NAME = "lexware-obx-importer";
-const GITHUB_API = "https://api.github.com";
 
 const PACKAGE_JSON = "./package.json";
-const DMG_PATH_TEMPLATE =
-  "./src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/lexware-obx-importer_{version}_aarch64.dmg";
-const TAR_PATH =
-  "./src-tauri/target/aarch64-apple-darwin/release/bundle/macos/lexware-obx-importer.app.tar.gz";
-const SIG_PATH =
-  "./src-tauri/target/aarch64-apple-darwin/release/bundle/macos/lexware-obx-importer.app.tar.gz.sig";
+const prefix = "./src-tauri/target/aarch64-apple-darwin/release/bundle";
+const DMG_PATH_TEMPLATE = `${prefix}/dmg/lexware-obx-importer_{version}_aarch64.dmg`;
+const TAR_PATH = `${prefix}/macos/lexware-obx-importer.app.tar.gz`;
+const SIG_PATH = `${prefix}/macos/lexware-obx-importer.app.tar.gz.sig`;
 const LATEST_JSON_PATH = "./latest.json";
 
 async function main() {
@@ -49,12 +46,12 @@ async function main() {
     const releaseName = `App v${version}`;
 
     const createReleaseResponse = await fetch(
-      `${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}/releases`,
+      `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases`,
       {
         method: "POST",
         headers: {
           Accept: "application/vnd.github+json",
-          Authorization: `token ${GITHUB_TOKEN}`,
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
           "X-GitHub-Api-Version": "2022-11-28",
         },
         body: JSON.stringify({
@@ -130,14 +127,17 @@ async function uploadAsset(releaseId: number, filePath: string) {
     const fileName = basename(filePath);
     const fileContent = await readFile(filePath);
 
-    // Determine content type based on file extension
     let contentType = "application/octet-stream";
-    if (filePath.endsWith(".json")) contentType = "application/json";
-    else if (filePath.endsWith(".dmg"))
-      contentType = "application/x-apple-diskimage";
-    else if (filePath.endsWith(".tar.gz")) contentType = "application/gzip";
 
-    const uploadUrl = `${GITHUB_API}/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets?name=${encodeURIComponent(
+    if (filePath.endsWith(".json")) {
+      contentType = "application/json";
+    } else if (filePath.endsWith(".dmg")) {
+      contentType = "application/x-apple-diskimage";
+    } else if (filePath.endsWith(".tar.gz")) {
+      contentType = "application/gzip";
+    }
+
+    const uploadUrl = `https://uploads.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets?name=${encodeURIComponent(
       fileName
     )}`;
 
@@ -145,8 +145,7 @@ async function uploadAsset(releaseId: number, filePath: string) {
       method: "POST",
       headers: {
         "Content-Type": contentType,
-        "Content-Length": fileContent.length.toString(),
-        Authorization: `token ${GITHUB_TOKEN}`,
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
         Accept: "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
       },

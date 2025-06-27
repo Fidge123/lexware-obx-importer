@@ -201,6 +201,137 @@ small {
   color: #666;
 }
 
-input[type="number"] {
-  /* text-align: right; */
+/* Line Items Styles */
+#line-items-container {
+  margin-top: 20px;
+  background-color: white;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--box-shadow);
+  overflow: hidden;
+}
+
+#line-items-container h3 {
+  margin: 0;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.line-item {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.line-item:last-child {
+  border-bottom: none;
+}
+
+.line-item.text-item {
+  background-color: #f8f9fa;
+}
+
+.line-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.line-item-name {
+  font-weight: 500;
+  color: #333;
+  flex: 1;
+}
+
+.line-item-description {
+  color: #666;
+  font-size: 13px;
+  margin-top: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.line-item-description.truncated::after {
+  content: "...";
+}
+
+.line-item-description:hover {
+  color: #333;
+}
+
+.line-item-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.line-item-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 100px;
+}
+
+.line-item-input label {
+  font-size: 12px;
+  color: #666;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+.line-item-input input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  font-size: 13px;
+  padding: 4px 8px;
+}
+
+.delete-button {
+  background-color: #ff3b30;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+  background-color: #d70015;
+}
+
+.tooltip {
+  position: absolute;
+  background: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  max-width: 300px;
+  word-wrap: break-word;
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+}
+
+.line-item-description:hover .tooltip {
+  opacity: 1;
 }

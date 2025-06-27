@@ -6,6 +6,7 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { Quotation } from "./types.ts";
 import { createQuotation, getContacts } from "./api.ts";
+import { LineItemsRenderer } from "./components/LineItemsRenderer.ts";
 
 getVersion().then((appVersion) => {
   document.querySelector("#version")!.textContent = appVersion;
@@ -15,6 +16,11 @@ const dropText: HTMLParagraphElement | null =
   document.querySelector("#dropText");
 const originalDropText = dropText?.textContent || "Datei auswählen";
 const preview: HTMLPreElement | null = document.querySelector("#preview");
+const lineItemsContainer: HTMLElement | null = document.querySelector(
+  "#line-items-container"
+);
+const lineItemsList: HTMLElement | null =
+  document.querySelector("#line-items-list");
 const apiKeyInput: HTMLInputElement | null = document.querySelector("#apiKey");
 const fileUpload: HTMLInputElement | null = document.querySelector("#obx");
 const longSelect: HTMLSelectElement | null = document.querySelector("#isLong");
@@ -35,6 +41,22 @@ let payload: Quotation | undefined;
 let apiKey = localStorage.getItem("apiKey") ?? "";
 let selectedContactId: string | null = null;
 let debounceTimer: NodeJS.Timeout | null = null;
+
+// Initialize Line Items Renderer
+let lineItemsRenderer: LineItemsRenderer | null = null;
+if (lineItemsContainer && lineItemsList) {
+  lineItemsRenderer = new LineItemsRenderer(lineItemsContainer, lineItemsList, {
+    onItemDeleted: (index: number) => {
+      if (payload) {
+        payload.lineItems.splice(index, 1);
+        lineItemsRenderer?.render(payload);
+      }
+    },
+    onItemChanged: (_index: number, _item: any) => {
+      // Item is already updated by reference, no need to do anything
+    },
+  });
+}
 
 if (apiKeyInput) {
   apiKeyInput.value = apiKey;
@@ -63,7 +85,7 @@ async function processFile() {
 }
 
 function updatePreview() {
-  if (preview && payload) {
+  if (payload) {
     if (selectedContactId) {
       payload.address = { contactId: selectedContactId };
     } else if (customerInput?.value) {
@@ -73,7 +95,16 @@ function updatePreview() {
       };
     }
 
-    preview.textContent = JSON.stringify(payload, null, 2);
+    // Use the line items renderer
+    lineItemsRenderer?.render(payload);
+
+    // Hide old preview and show line items
+    if (preview) {
+      preview.style.display = "none";
+    }
+  } else {
+    // Clear line items if no payload
+    lineItemsRenderer?.clear();
   }
 }
 
@@ -120,6 +151,7 @@ async function submit(ev: Event) {
       const data = await createQuotation(payload, apiKey);
       dropText!.textContent = originalDropText;
       payload = undefined;
+      lineItemsRenderer?.clear();
       (ev.target as HTMLInputElement).disabled = true;
       if (data.id) {
         await openUrl(
@@ -165,7 +197,9 @@ if (customerInput) {
 }
 
 async function fetchAndDisplayCustomers(): Promise<void> {
-  if (!customerList || !loadingIndicator || !apiKey) return;
+  if (!customerList || !loadingIndicator || !apiKey) {
+    return;
+  }
 
   try {
     customerList.innerHTML = "";
