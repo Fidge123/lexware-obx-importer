@@ -2,9 +2,14 @@ import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import type { Quotation, LineItem } from "./types.ts";
 import { LineItemsRenderer } from "./components/LineItemsRenderer.tsx";
+import { DropZone } from "./components/DropZone.tsx";
+import { createPayload } from "./obx.ts";
+import { BasicFormInput } from "./components/BasicFormInput.tsx";
 
 export default function App() {
   const [version, setVersion] = useState<string>("");
+  const [aufschlag, setAufschlag] = useState(0);
+  const [customer, setCustomer] = useState<string>("");
   const [apiKey, setApiKey] = useState<string>(
     localStorage.getItem("apiKey") ?? ""
   );
@@ -37,6 +42,30 @@ export default function App() {
     }
   };
 
+  const handleFileSelect = async (content: Promise<string> | string) => {
+    const mult = 1 + aufschlag / 100;
+    const parser = new DOMParser();
+    const parsed = parser.parseFromString(await content, "application/xml");
+
+    setPayload(
+      createPayload(
+        parsed,
+        mult,
+        longSelect?.value === "long",
+        groupSelect?.value === "y"
+      )
+    );
+
+    // if (payload && apiKey && submitButton) {
+    //   submitButton.disabled = false;
+    // }
+  };
+
+  const handleFormSubmit = (formData: ImportFormData) => {
+    // TODO: Implement import logic using the form data
+    console.log("Form submitted with data:", formData);
+  };
+
   return (
     <div>
       <h1>
@@ -44,71 +73,21 @@ export default function App() {
         <small>{version}</small>
       </h1>
 
-      <form>
-        <div id="dropZone">
-          <p>Drag & Drop oder anklicken</p>
-        </div>
-        <input
-          type="file"
-          accept=".obx,application/obx+xml"
-          style={{ display: "none" }}
-        />
+      <DropZone onFileSelect={handleFileSelect} />
 
-        <label>
-          API Key
-          <input
-            type="text"
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-          />
-        </label>
-
-        <label>
-          Aufschlag in %
-          <input type="number" defaultValue="0" />
-        </label>
-
-        <label>
-          Kunde
-          <div className="customer-select-container">
-            <input type="text" placeholder="Testkunde" autoComplete="off" />
-            <div className="customer-dropdown">
-              <div className="loading-indicator" style={{ display: "none" }}>
-                Lädt...
-              </div>
-              <ul></ul>
-            </div>
-          </div>
-        </label>
-
-        <label>
-          Produkte mit gleichem Preis und Text
-          <select defaultValue="y">
-            <option value="y">
-              Gruppiert (eine Zeile mit Stückzahl &gt; 1)
-            </option>
-            <option value="n">
-              Nicht Gruppiert (je eine Zeile mit Stückzahl = 1)
-            </option>
-          </select>
-        </label>
-
-        <label>
-          Beschreibungen
-          <select defaultValue="long">
-            <option value="short">Kurzform in Beschreibung des Produkts</option>
-            <option value="long">Langform in extra Zeile(n)</option>
-          </select>
-        </label>
-
-        <div className="formactions">
-          <input
-            type="submit"
-            value="Importieren"
-            disabled={!payload || !apiKey}
-          />
-        </div>
-      </form>
+      <BasicFormInput name="API Key" value={apiKey} setValue={setApiKey} />
+      <BasicFormInput
+        name="Aufschlag in %"
+        type="number"
+        value={aufschlag}
+        setValue={setAufschlag}
+      />
+      <BasicFormInput
+        name="Kunde"
+        value={customer}
+        setValue={setCustomer}
+        placeholder="Testkunde"
+      />
 
       <LineItemsRenderer
         payload={payload}

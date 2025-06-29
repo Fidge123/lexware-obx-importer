@@ -5,7 +5,7 @@ import xpath from "xpath";
 
 import { createPayload } from "./obx.ts";
 import { count } from "./util.ts";
-import { CustomLineItem, LineItemWithType } from "./types.ts";
+import type { CustomLineItem, LineItemWithType } from "./types.ts";
 
 const utf8 = { encoding: "utf-8" } as const;
 

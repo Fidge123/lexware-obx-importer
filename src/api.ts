@@ -1,5 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { ContactListItem, ContactsResponse, Quotation } from "./types";
+import type { ContactListItem, ContactsResponse, Quotation } from "./types";
 
 interface Response {
   id: string;
