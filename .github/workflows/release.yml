@@ -13,8 +13,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -36,7 +36,7 @@ jobs:
           CI: true
         with:
           tagName: app-v__VERSION__
-          tauriScript: 'bun tauri'
-          releaseName: 'App v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          tauriScript: "bun tauri"
+          releaseName: "App v__VERSION__"
+          releaseBody: "See the assets to download this version and install."
           args: ${{ matrix.args }}

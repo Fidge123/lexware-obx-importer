@@ -16,7 +16,7 @@ export function BasicFormInput({
         autoComplete="off"
       />
       <div id="customer-dropdown" className="customer-dropdown">
-        <div class="loading-indicator" style="display: none">
+        <div className="loading-indicator" style={{ display: "none" }}>
           Lädt...
         </div>
         <ul id="customer-list"></ul>

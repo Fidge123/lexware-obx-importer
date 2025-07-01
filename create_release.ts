@@ -60,12 +60,12 @@ async function main() {
           draft: true,
           generate_release_notes: true,
         }),
-      }
+      },
     );
 
     if (!createReleaseResponse.ok) {
       throw new Error(
-        `Failed to create release: ${await createReleaseResponse.text()}`
+        `Failed to create release: ${await createReleaseResponse.text()}`,
       );
     }
 
@@ -105,7 +105,7 @@ async function main() {
     await writeFile(
       LATEST_JSON_PATH,
       JSON.stringify(latestJson, null, 2),
-      "utf-8"
+      "utf-8",
     );
     console.log(`✅ Created ${LATEST_JSON_PATH}`);
 
@@ -138,7 +138,7 @@ async function uploadAsset(releaseId: number, filePath: string) {
     }
 
     const uploadUrl = `https://uploads.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases/${releaseId}/assets?name=${encodeURIComponent(
-      fileName
+      fileName,
     )}`;
 
     const response = await fetch(uploadUrl, {

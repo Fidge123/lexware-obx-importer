@@ -11,11 +11,11 @@ export default function App() {
   const [aufschlag, setAufschlag] = useState(0);
   const [customer, setCustomer] = useState<string>("");
   const [apiKey, setApiKey] = useState<string>(
-    localStorage.getItem("apiKey") ?? ""
+    localStorage.getItem("apiKey") ?? "",
   );
   const [payload, setPayload] = useState<Quotation | undefined>();
   const [_selectedContactId, _setSelectedContactId] = useState<string | null>(
-    null
+    null,
   );
 
   useEffect(() => {
@@ -52,8 +52,8 @@ export default function App() {
         parsed,
         mult,
         longSelect?.value === "long",
-        groupSelect?.value === "y"
-      )
+        groupSelect?.value === "y",
+      ),
     );
 
     // if (payload && apiKey && submitButton) {

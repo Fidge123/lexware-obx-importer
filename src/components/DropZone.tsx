@@ -10,7 +10,7 @@ export function DropZone({ onFileSelect }: DropZoneProps) {
   const originalDropText = "Drag & Drop oder anklicken";
   const [dropText, setDropText] = useState(originalDropText);
 
-  getCurrentWebview().onDragDropEvent((ev) => {
+  void getCurrentWebview().onDragDropEvent((ev) => {
     if (ev.payload.type === "over" && dropText) {
       setDropText("+");
     } else if (ev.payload.type === "drop") {
