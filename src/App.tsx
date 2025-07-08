@@ -14,12 +14,12 @@ export default function App() {
     localStorage.getItem("apiKey") ?? "",
   );
   const [payload, setPayload] = useState<Quotation | undefined>();
-  const [_selectedContactId, _setSelectedContactId] = useState<string | null>(
-    null,
-  );
+  // const [_selectedContactId, _setSelectedContactId] = useState<string | null>(
+  //   null,
+  // );
 
   useEffect(() => {
-    getVersion().then(setVersion);
+    void getVersion().then(setVersion);
   }, []);
 
   useEffect(() => {

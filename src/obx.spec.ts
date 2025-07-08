@@ -169,7 +169,7 @@ test("generate valid json for another complex obx 7 with increased prices", asyn
       expect(
         Math.abs(
           item.unitPrice.netAmount -
-            short.lineItems[i].unitPrice.netAmount * 1.05,
+            (short.lineItems[i] as CustomLineItem).unitPrice.netAmount * 1.05,
         ),
       ).toBeLessThan(0.008);
     }
