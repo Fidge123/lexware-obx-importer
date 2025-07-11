@@ -1,22 +1,34 @@
 import { useState, useEffect } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import type { Quotation, LineItem } from "./types.ts";
-import { LineItemsRenderer } from "./components/LineItemsRenderer.tsx";
-import { DropZone } from "./components/DropZone.tsx";
+import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
+import { DropZone } from "./components/form/DropZone.tsx";
 import { createPayload } from "./obx.ts";
 import { ApiKeyInput } from "./components/form/ApiKeyInput.tsx";
 import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
-import { CustomerInput } from "./components/form/CustomerInput.tsx";
 import { GroupingToggle } from "./components/form/GroupingToggle.tsx";
 import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
+import { createQuotation } from "./api.ts";
 
 export default function App() {
   const [version, setVersion] = useState<string>("");
   const [payload, setPayload] = useState<Quotation | undefined>();
+  const [xmlDoc, setXmlDoc] = useState<Document | undefined>();
+  const [multiplier, setMultiplier] = useState<number>(0);
+  const [grouping, setGrouping] = useState<boolean>(true);
+  const [description, setDescription] = useState<boolean>(true);
 
   useEffect(() => {
     void getVersion().then(setVersion);
   }, []);
+
+  useEffect(() => {
+    if (xmlDoc) {
+      setPayload(
+        createPayload(xmlDoc, 1 + multiplier / 100, description, grouping)
+      );
+    }
+  }, [xmlDoc, multiplier, grouping, description]);
 
   const handleItemDeleted = (index: number) => {
     if (payload) {
@@ -34,32 +46,21 @@ export default function App() {
     }
   };
 
-  const handleFileSelect = async (content: Promise<string> | string) => {
-    // const mult = 1 + aufschlag / 100;
+  async function handleFileSelect(content: Promise<string> | string) {
     const parser = new DOMParser();
     const parsed = parser.parseFromString(await content, "application/xml");
+    setXmlDoc(parsed);
+  }
 
-    setPayload(
-      createPayload(
-        parsed,
-        1,
-        true,
-        true
-        // mult,
-        // longSelect?.value === "long",
-        // groupSelect?.value === "y",
-      )
-    );
-
-    // if (payload && apiKey && submitButton) {
-    //   submitButton.disabled = false;
-    // }
-  };
-
-  // const handleFormSubmit = (formData: ImportFormData) => {
-  //   // TODO: Implement import logic using the form data
-  //   console.log("Form submitted with data:", formData);
-  // };
+  function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const apiKey = localStorage.getItem("apiKey") || "";
+    if (payload) {
+      void (async () => {
+        await createQuotation(payload, apiKey);
+      })();
+    }
+  }
 
   return (
     <div>
@@ -68,14 +69,14 @@ export default function App() {
         <small>{version}</small>
       </h1>
 
-      <form onSubmit={() => null}>
-        <DropZone onFileSelect={handleFileSelect} />
+      <form onSubmit={submit}>
+        <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
 
         <ApiKeyInput />
-        <MultiplierInput />
-        <CustomerInput />
-        <GroupingToggle />
-        <DescriptionToggle />
+        <MultiplierInput onChange={(value) => setMultiplier(value)} />
+        {/* <CustomerInput /> */}
+        <GroupingToggle onChange={(value) => setGrouping(value)} />
+        <DescriptionToggle onChange={(value) => setDescription(value)} />
 
         <div className="formactions">
           <input
@@ -86,7 +87,7 @@ export default function App() {
           />
         </div>
       </form>
-
+      <pre>{JSON.stringify(payload, null, 2)}</pre>
       <LineItemsRenderer
         payload={payload}
         onItemDeleted={handleItemDeleted}

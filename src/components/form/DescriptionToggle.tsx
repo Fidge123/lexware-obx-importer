@@ -1,8 +1,8 @@
-export function DescriptionToggle() {
+export function DescriptionToggle({ onChange }: Props) {
   return (
     <label>
       Beschreibungen
-      <select>
+      <select onChange={(e) => onChange(e.currentTarget.value === "long")}>
         <option value="long">{"Langform in extra Zeile(n)"}</option>
         <option value="short">
           {"Kurzform in Beschreibung des Produktes"}
@@ -10,4 +10,8 @@ export function DescriptionToggle() {
       </select>
     </label>
   );
+}
+
+interface Props {
+  onChange: (value: boolean) => void;
 }

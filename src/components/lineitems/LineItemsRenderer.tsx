@@ -1,5 +1,5 @@
 import React from "react";
-import type { LineItem, Quotation } from "../types.ts";
+import type { LineItem, Quotation } from "../../types.ts";
 import { LineItemComponent } from "./LineItemComponent.tsx";
 
 interface LineItemsRendererProps {
