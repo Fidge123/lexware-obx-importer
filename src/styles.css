@@ -118,10 +118,9 @@ input:disabled {
   background-color: #f5f9ff;
 }
 
-#dropText {
+#dropZone p {
   margin: 0;
   color: #777;
-  font-size: 14px;
 }
 
 .formactions {
@@ -340,4 +339,61 @@ small {
 input[type="hidden"] {
   display: none;
   visibility: hidden;
+}
+
+/* CustomerInput styles - alignment fix */
+.customer-input-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  margin-bottom: 1rem;
+}
+
+.customer-input-box {
+  flex-grow: 1;
+  width: 380px;
+  max-width: 380px;
+  height: var(--input-height);
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.customer-dropdown {
+  position: absolute;
+  left: 0;
+  z-index: 10;
+  background: white;
+  border: 1px solid var(--border-color);
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
+  display: none;
+}
+.customer-dropdown.active {
+  display: block;
+}
+
+.customer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.customer-list-item {
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: background 0.2s;
+}
+.customer-list-item:hover {
+  background: #f0f0f0;
+}
+
+.loading-indicator {
+  padding: 8px;
+  color: #888;
+  font-size: 0.95rem;
 }

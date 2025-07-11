@@ -3,7 +3,7 @@ import type { LineItemWithType } from "./types";
 export function listen(
   selector: string,
   event: string,
-  callback: (e: Event) => void
+  callback: (e: Event) => void,
 ): () => void {
   const component = document.querySelector(selector);
   if (component) {
@@ -19,6 +19,6 @@ export function count(lineItems: LineItemWithType[]): number {
   return lineItems.reduce(
     (count, item) =>
       count + (item.type === "custom" ? (item.quantity ?? 1) : 0),
-    0
+    0,
   );
 }

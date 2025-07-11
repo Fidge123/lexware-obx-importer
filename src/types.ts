@@ -32,14 +32,7 @@ export type LineItem = TextLineItem | CustomLineItem | SubLineItem;
 export interface Quotation {
   voucherDate: string;
   expirationDate: string;
-  address:
-    | {
-        contactId: string;
-      }
-    | {
-        name: string;
-        countryCode: string;
-      };
+  address: Address;
   lineItems: LineItem[];
   totalPrice: {
     currency: string;

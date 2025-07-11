@@ -4,6 +4,7 @@ import type {
   TextLineItem,
   CustomLineItem,
   SubLineItem,
+  Address,
 } from "./types";
 
 let evaluator: XPathEvaluator;
@@ -278,9 +279,10 @@ export function createPayload(
   multVal: number,
   includeDescription: boolean,
   groupLineItems: boolean,
-  xpath?: XPathEvaluator,
+  address: Address = { name: "Testkunde", countryCode: "DE" },
+  xpath: XPathEvaluator = new XPathEvaluator(),
 ): Quotation {
-  evaluator = xpath ?? new XPathEvaluator();
+  evaluator = xpath;
   mult = isNaN(multVal) ? 1 : multVal;
 
   const now = new Date();
@@ -293,7 +295,7 @@ export function createPayload(
   return {
     voucherDate: now.toISOString(),
     expirationDate: expiration.toISOString(),
-    address: { name: "Testkunde", countryCode: "DE" },
+    address: address,
     lineItems: [
       ...aggregateDuplicateLists(
         getPrefix(parsed).flatMap(([prefix, root]) =>

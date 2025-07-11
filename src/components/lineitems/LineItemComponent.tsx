@@ -65,7 +65,7 @@ const isTextItem = (item: LineItem): item is TextLineItem => {
 };
 
 const hasEditableControls = (
-  item: LineItem
+  item: LineItem,
 ): item is CustomLineItem | SubLineItem => {
   return "quantity" in item && "unitPrice" in item;
 };

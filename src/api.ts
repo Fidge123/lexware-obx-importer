@@ -52,7 +52,7 @@ export async function getContacts(
       return {
         id: contact.id,
         name: contact.company?.name ?? contact.person?.lastName ?? "",
-        address,
+        address: { contactId: contact.id, ...address },
       };
     });
   } else {

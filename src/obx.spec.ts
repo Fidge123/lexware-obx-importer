@@ -16,7 +16,10 @@ test("generate valid json for simple obx 1", async () => {
   const short = await readFile("examples/01-short.json", utf8);
   const long = await readFile("examples/01-long.json", utf8);
 
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -32,7 +35,10 @@ test("generate valid json for another obx 2", async () => {
   const short = await readFile("examples/02-short.json", utf8);
   const long = await readFile("examples/02-long.json", utf8);
 
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -47,7 +53,10 @@ test("generate valid json for complex obx 3", async () => {
   const obx = await readFile("examples/03.obx", utf8);
   const short = await readFile("examples/03-short.json", utf8);
   const long = await readFile("examples/03-long.json", utf8);
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -62,7 +71,10 @@ test("generate valid json for another complex obx 4", async () => {
   const obx = await readFile("examples/04.obx", utf8);
   const short = await readFile("examples/04-short.json", utf8);
   const long = await readFile("examples/04-long.json", utf8);
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -77,7 +89,10 @@ test("generate valid json for another complex obx 5", async () => {
   const obx = await readFile("examples/05.obx", utf8);
   const short = await readFile("examples/05-short.json", utf8);
   const long = await readFile("examples/05-long.json", utf8);
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -92,7 +107,10 @@ test("generate valid json for another complex obx 6", async () => {
   const obx = await readFile("examples/06.obx", utf8);
   const short = await readFile("examples/06-short.json", utf8);
   const long = await readFile("examples/06-long.json", utf8);
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -107,7 +125,10 @@ test("generate valid json for another complex obx 7", async () => {
   const obx = await readFile("examples/07.obx", utf8);
   const short = await readFile("examples/07-short.json", utf8);
   const long = await readFile("examples/07-long.json", utf8);
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -123,7 +144,10 @@ test("generate ungrouped json for obx 7", async () => {
   const short = await readFile("examples/07-short-ungrouped.json", utf8);
   const long = await readFile("examples/07-long-ungrouped.json", utf8);
   const longGrouped = await readFile("examples/07-long.json", utf8);
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect(createPayload(parsed, 1, false, false, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
@@ -139,8 +163,7 @@ test("generate ungrouped json for obx 7", async () => {
 
   expect(
     count(
-      createPayload(parsed, 1, true, false, x)
-        .lineItems as LineItemWithType[],
+      createPayload(parsed, 1, true, false, x).lineItems as LineItemWithType[],
     ),
   ).toEqual(count(JSON.parse(longGrouped).lineItems));
 });
@@ -148,10 +171,15 @@ test("generate ungrouped json for obx 7", async () => {
 test("generate valid json for another complex obx 7 with increased prices", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/07.obx", utf8);
-  const short = JSON.parse(await readFile("examples/07-short.json", utf8)) as Quotation;
+  const short = JSON.parse(
+    await readFile("examples/07-short.json", utf8),
+  ) as Quotation;
   const short5 = await readFile("examples/07-short-plus-five.json", utf8);
   const long5 = await readFile("examples/07-long-plus-five.json", utf8);
-  const parsed = parser.parseFromString(obx, "application/xml") as unknown as Document;
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
 
   expect.assertions(71);
   expect(createPayload(parsed, 1.05, false, true, x).lineItems).toEqual(
@@ -162,8 +190,7 @@ test("generate valid json for another complex obx 7 with increased prices", asyn
   );
 
   for (const [i, item] of (
-    createPayload(parsed, 1.05, false, true, x)
-      .lineItems as CustomLineItem[]
+    createPayload(parsed, 1.05, false, true, x).lineItems as CustomLineItem[]
   ).entries()) {
     if (item.name !== "Frachtkosten und Verbringung") {
       expect(
