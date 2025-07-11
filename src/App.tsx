@@ -4,27 +4,19 @@ import type { Quotation, LineItem } from "./types.ts";
 import { LineItemsRenderer } from "./components/LineItemsRenderer.tsx";
 import { DropZone } from "./components/DropZone.tsx";
 import { createPayload } from "./obx.ts";
-import { BasicFormInput } from "./components/BasicFormInput.tsx";
+import { ApiKeyInput } from "./components/form/ApiKeyInput.tsx";
+import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
+import { CustomerInput } from "./components/form/CustomerInput.tsx";
+import { GroupingToggle } from "./components/form/GroupingToggle.tsx";
+import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
 
 export default function App() {
   const [version, setVersion] = useState<string>("");
-  const [aufschlag, setAufschlag] = useState(0);
-  const [customer, setCustomer] = useState<string>("");
-  const [apiKey, setApiKey] = useState<string>(
-    localStorage.getItem("apiKey") ?? "",
-  );
   const [payload, setPayload] = useState<Quotation | undefined>();
-  // const [_selectedContactId, _setSelectedContactId] = useState<string | null>(
-  //   null,
-  // );
 
   useEffect(() => {
     void getVersion().then(setVersion);
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem("apiKey", apiKey);
-  }, [apiKey]);
 
   const handleItemDeleted = (index: number) => {
     if (payload) {
@@ -43,17 +35,20 @@ export default function App() {
   };
 
   const handleFileSelect = async (content: Promise<string> | string) => {
-    const mult = 1 + aufschlag / 100;
+    // const mult = 1 + aufschlag / 100;
     const parser = new DOMParser();
     const parsed = parser.parseFromString(await content, "application/xml");
 
     setPayload(
       createPayload(
         parsed,
-        mult,
-        longSelect?.value === "long",
-        groupSelect?.value === "y",
-      ),
+        1,
+        true,
+        true
+        // mult,
+        // longSelect?.value === "long",
+        // groupSelect?.value === "y",
+      )
     );
 
     // if (payload && apiKey && submitButton) {
@@ -61,10 +56,10 @@ export default function App() {
     // }
   };
 
-  const handleFormSubmit = (formData: ImportFormData) => {
-    // TODO: Implement import logic using the form data
-    console.log("Form submitted with data:", formData);
-  };
+  // const handleFormSubmit = (formData: ImportFormData) => {
+  //   // TODO: Implement import logic using the form data
+  //   console.log("Form submitted with data:", formData);
+  // };
 
   return (
     <div>
@@ -73,21 +68,24 @@ export default function App() {
         <small>{version}</small>
       </h1>
 
-      <DropZone onFileSelect={handleFileSelect} />
+      <form onSubmit={() => null}>
+        <DropZone onFileSelect={handleFileSelect} />
 
-      <BasicFormInput name="API Key" value={apiKey} setValue={setApiKey} />
-      <BasicFormInput
-        name="Aufschlag in %"
-        type="number"
-        value={aufschlag}
-        setValue={setAufschlag}
-      />
-      <BasicFormInput
-        name="Kunde"
-        value={customer}
-        setValue={setCustomer}
-        placeholder="Testkunde"
-      />
+        <ApiKeyInput />
+        <MultiplierInput />
+        <CustomerInput />
+        <GroupingToggle />
+        <DescriptionToggle />
+
+        <div className="formactions">
+          <input
+            id="submit"
+            type="submit"
+            value="Importieren"
+            disabled={!localStorage.getItem("apiKey")}
+          />
+        </div>
+      </form>
 
       <LineItemsRenderer
         payload={payload}
