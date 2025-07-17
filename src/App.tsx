@@ -33,8 +33,8 @@ export default function App() {
           multiplier,
           description,
           grouping,
-          selectedCustomer?.address
-        )
+          selectedCustomer?.address,
+        ),
       );
     }
   }, [xmlDoc, multiplier, grouping, description, selectedCustomer]);

@@ -8,6 +8,7 @@ import { count } from "./util.ts";
 import type { CustomLineItem, LineItemWithType, Quotation } from "./types.ts";
 
 const utf8 = { encoding: "utf-8" } as const;
+const address = { name: "Testkunde", countryCode: "DE" };
 
 const x = xpath as unknown as XPathEvaluator;
 test("generate valid json for simple obx 1", async () => {
@@ -21,10 +22,10 @@ test("generate valid json for simple obx 1", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, true, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 });
@@ -40,10 +41,10 @@ test("generate valid json for another obx 2", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, true, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 });
@@ -58,10 +59,10 @@ test("generate valid json for complex obx 3", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, true, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 });
@@ -76,10 +77,10 @@ test("generate valid json for another complex obx 4", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, true, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 });
@@ -94,10 +95,10 @@ test("generate valid json for another complex obx 5", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, true, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 });
@@ -112,10 +113,10 @@ test("generate valid json for another complex obx 6", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, true, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 });
@@ -130,10 +131,10 @@ test("generate valid json for another complex obx 7", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, true, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, true, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 });
@@ -149,21 +150,22 @@ test("generate ungrouped json for obx 7", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  expect(createPayload(parsed, 1, false, false, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, false, false, address, x).lineItems).toEqual(
     JSON.parse(short).lineItems,
   );
-  expect(createPayload(parsed, 1, true, false, x).lineItems).toEqual(
+  expect(createPayload(parsed, 1, true, false, address, x).lineItems).toEqual(
     JSON.parse(long).lineItems,
   );
 
-  for (const item of createPayload(parsed, 1, false, false, x)
+  for (const item of createPayload(parsed, 1, false, false, address, x)
     .lineItems as CustomLineItem[]) {
     expect(item.quantity).toBe(1);
   }
 
   expect(
     count(
-      createPayload(parsed, 1, true, false, x).lineItems as LineItemWithType[],
+      createPayload(parsed, 1, true, false, address, x)
+        .lineItems as LineItemWithType[],
     ),
   ).toEqual(count(JSON.parse(longGrouped).lineItems));
 });
@@ -182,15 +184,16 @@ test("generate valid json for another complex obx 7 with increased prices", asyn
   ) as unknown as Document;
 
   expect.assertions(71);
-  expect(createPayload(parsed, 1.05, false, true, x).lineItems).toEqual(
-    JSON.parse(short5).lineItems,
-  );
-  expect(createPayload(parsed, 1.05, true, true, x).lineItems).toEqual(
+  expect(
+    createPayload(parsed, 1.05, false, true, address, x).lineItems,
+  ).toEqual(JSON.parse(short5).lineItems);
+  expect(createPayload(parsed, 1.05, true, true, address, x).lineItems).toEqual(
     JSON.parse(long5).lineItems,
   );
 
   for (const [i, item] of (
-    createPayload(parsed, 1.05, false, true, x).lineItems as CustomLineItem[]
+    createPayload(parsed, 1.05, false, true, address, x)
+      .lineItems as CustomLineItem[]
   ).entries()) {
     if (item.name !== "Frachtkosten und Verbringung") {
       expect(

@@ -37,8 +37,8 @@ export function CustomerInput({ value, onChange }: Props) {
     setCustomers(
       await getContacts(
         localStorage.getItem("apiKey") ?? "",
-        filter?.length >= 3 ? filter : undefined
-      )
+        filter?.length >= 3 ? filter : undefined,
+      ),
     );
     setLoading(false);
   }
