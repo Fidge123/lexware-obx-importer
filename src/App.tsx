@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import type { Quotation, LineItem, ContactListItem } from "./types.ts";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
@@ -12,14 +12,14 @@ import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
 import { createQuotation } from "./api.ts";
 
 export default function App() {
-  const [version, setVersion] = useState<string>("");
-  const [payload, setPayload] = useState<Quotation | undefined>();
+  const [version, setVersion] = useState("");
+  const [multiplier, setMultiplier] = useState(1);
+  const [grouping, setGrouping] = useState(true);
+  const [description, setDescription] = useState(true);
   const [xmlDoc, setXmlDoc] = useState<Document | undefined>();
-  const [multiplier, setMultiplier] = useState<number>(1);
-  const [grouping, setGrouping] = useState<boolean>(true);
-  const [description, setDescription] = useState<boolean>(true);
   const [selectedCustomer, setSelectedCustomer] =
     useState<ContactListItem | null>(null);
+  const [payload, setPayload] = useState<Quotation | undefined>();
 
   useEffect(() => {
     void getVersion().then(setVersion);
@@ -38,10 +38,6 @@ export default function App() {
       );
     }
   }, [xmlDoc, multiplier, grouping, description, selectedCustomer]);
-
-  const handleMultiplierChange = (value: number) => setMultiplier(value);
-  const handleGroupingChange = (value: boolean) => setGrouping(value);
-  const handleDescriptionChange = (value: boolean) => setDescription(value);
 
   const handleCustomerChange = (customer: ContactListItem | null) =>
     setSelectedCustomer(customer);
@@ -68,7 +64,7 @@ export default function App() {
     setXmlDoc(parsed);
   }
 
-  function submit(e: React.FormEvent<HTMLFormElement>) {
+  function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const apiKey = localStorage.getItem("apiKey") || "";
     if (payload) {
@@ -88,13 +84,13 @@ export default function App() {
       <form onSubmit={submit}>
         <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
         <ApiKeyInput />
-        <MultiplierInput onChange={handleMultiplierChange} />
+        <MultiplierInput onChange={setMultiplier} />
         <CustomerInput
           value={selectedCustomer}
           onChange={handleCustomerChange}
         />
-        <GroupingToggle onChange={handleGroupingChange} />
-        <DescriptionToggle onChange={handleDescriptionChange} />
+        <GroupingToggle onChange={setGrouping} />
+        <DescriptionToggle onChange={setDescription} />
         <div className="formactions">
           <input
             id="submit"
