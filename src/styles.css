@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --accent-color: #007aff;
   --border-color: #d2d2d7;
