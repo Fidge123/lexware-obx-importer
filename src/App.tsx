@@ -12,6 +12,7 @@ import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
 import { createQuotation } from "./api.ts";
 
 export default function App() {
+  const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
   const [version, setVersion] = useState("");
   const [multiplier, setMultiplier] = useState(1);
   const [grouping, setGrouping] = useState(true);
@@ -56,7 +57,6 @@ export default function App() {
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const apiKey = localStorage.getItem("apiKey") || "";
     if (payload) {
       void (async () => {
         await createQuotation(payload, apiKey);
@@ -65,25 +65,28 @@ export default function App() {
   }
 
   return (
-    <div>
-      <h1>
+    <>
+      <h1 className="text-3xl font-medium my-6">
         Lexware OBX Importer
-        <small>{version}</small>
+        <small className="text-xs font-light text-gray-400 px-2">
+          {version}
+        </small>
       </h1>
 
-      <form onSubmit={submit}>
+      <form onSubmit={submit} className="space-y-4 max-w-full w-full">
         <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
-        <ApiKeyInput />
+        <ApiKeyInput onChange={setApiKey} />
         <MultiplierInput onChange={setMultiplier} />
         <CustomerInput onChange={setCustomer} />
         <GroupingToggle onChange={setGrouping} />
         <DescriptionToggle onChange={setDescription} />
-        <div className="formactions">
+        <div className="flex justify-end mt-6">
           <input
             id="submit"
             type="submit"
             value="Importieren"
-            disabled={!localStorage.getItem("apiKey")}
+            className="bg-blue-500 text-white text-sm py-1.5 px-3 rounded-md shadow font-semibold hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!apiKey}
           />
         </div>
       </form>
@@ -93,6 +96,6 @@ export default function App() {
         onItemDeleted={handleItemDeleted}
         onItemChanged={handleItemChanged}
       />
-    </div>
+    </>
   );
 }

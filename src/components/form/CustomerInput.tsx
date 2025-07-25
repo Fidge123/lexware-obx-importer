@@ -16,22 +16,24 @@ export function CustomerInput({ onChange }: Props) {
   }, []);
 
   async function fetchCustomers(filter: string): Promise<void> {
-    setCustomers(
-      await getContacts(
-        localStorage.getItem("apiKey") ?? "",
-        filter?.length >= 3 ? filter : undefined,
-      ),
-    );
+    if (filter.length < 3) {
+      setCustomers([]);
+    } else {
+      setCustomers(
+        await getContacts(localStorage.getItem("apiKey") ?? "", filter),
+      );
+    }
   }
 
   return (
-    <label className="customer-input-label">
+    <label className="flex items-center justify-between text-sm">
       Kunde
       <Combobox onChange={onChange} onClose={() => {}}>
         <ComboboxInput
           placeholder="Testkunde"
           displayValue={(customer: Address) => customer?.name}
           onChange={(ev) => void fetchCustomers(ev.target.value)}
+          className="w-sm py-1.5 px-3 rounded-md border border-gray-300 bg-white shadow focus:border-blue-500"
         />
         <ComboboxOptions anchor="bottom" className="border empty:invisible">
           {customers.map((customer, i) => (

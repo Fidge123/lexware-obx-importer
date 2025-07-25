@@ -1,13 +1,13 @@
 export function MultiplierInput({ onChange }: Props) {
   return (
-    <label>
+    <label className="flex items-center justify-between text-sm">
       Aufschlag in %
       <input
         type="number"
         autoComplete="off"
         defaultValue={0}
-        step={0.1}
         onChange={(e) => onChange(e.target.valueAsNumber ?? 0)}
+        className="w-sm py-1.5 px-3 rounded-md border border-gray-300 bg-white shadow focus:border-blue-500"
       />
     </label>
   );

@@ -57,6 +57,7 @@ export function DropZone({ onFileSelect }: DropZoneProps) {
     <>
       <div
         id="dropZone"
+        className="bg-white text-gray-500 hover:border-blue-500 hover:bg-blue-50 border-2 border-dashed border-gray-300 rounded-xl p-10 text-center"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onClick={handleClick}
