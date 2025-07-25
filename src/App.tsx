@@ -1,7 +1,8 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import type { Quotation, LineItem, Address } from "./types.ts";
-import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import type { Quotation, Address } from "./types.ts";
+// import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
 import { DropZone } from "./components/form/DropZone.tsx";
 import { createPayload } from "./obx.ts";
 import { ApiKeyInput } from "./components/form/ApiKeyInput.tsx";
@@ -10,6 +11,7 @@ import { CustomerInput } from "./components/form/CustomerInput.tsx";
 import { GroupingToggle } from "./components/form/GroupingToggle.tsx";
 import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
 import { createQuotation } from "./api.ts";
+import { Error } from "./components/Error.tsx";
 
 export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
@@ -20,6 +22,7 @@ export default function App() {
   const [xmlDoc, setXmlDoc] = useState<Document | undefined>();
   const [customer, setCustomer] = useState<Address | undefined>();
   const [payload, setPayload] = useState<Quotation | undefined>();
+  const [error, setError] = useState<string>("");
 
   useEffect(() => {
     void getVersion().then(setVersion);
@@ -33,21 +36,21 @@ export default function App() {
     }
   }, [xmlDoc, multiplier, grouping, description, customer]);
 
-  const handleItemDeleted = (index: number) => {
-    if (payload) {
-      const newPayload = { ...payload };
-      newPayload.lineItems.splice(index, 1);
-      setPayload(newPayload);
-    }
-  };
+  // const handleItemDeleted = (index: number) => {
+  //   if (payload) {
+  //     const newPayload = { ...payload };
+  //     newPayload.lineItems.splice(index, 1);
+  //     setPayload(newPayload);
+  //   }
+  // };
 
-  const handleItemChanged = (index: number, item: LineItem) => {
-    if (payload) {
-      const newPayload = { ...payload };
-      newPayload.lineItems[index] = item;
-      setPayload(newPayload);
-    }
-  };
+  // const handleItemChanged = (index: number, item: LineItem) => {
+  //   if (payload) {
+  //     const newPayload = { ...payload };
+  //     newPayload.lineItems[index] = item;
+  //     setPayload(newPayload);
+  //   }
+  // };
 
   async function handleFileSelect(content: Promise<string> | string) {
     const parser = new DOMParser();
@@ -58,9 +61,18 @@ export default function App() {
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (payload) {
-      void (async () => {
-        await createQuotation(payload, apiKey);
-      })();
+      createQuotation(payload, apiKey)
+        .then((quotationId) => {
+          void openUrl(
+            `https://app.lexware.de/permalink/quotations/view/${quotationId}`,
+          );
+          location.reload();
+        })
+        .catch((err) => {
+          setError(`${err}`);
+        });
+    } else {
+      setError("Keine Daten zum Importieren vorhanden!");
     }
   }
 
@@ -80,7 +92,13 @@ export default function App() {
         <CustomerInput onChange={setCustomer} />
         <GroupingToggle onChange={setGrouping} />
         <DescriptionToggle onChange={setDescription} />
-        <div className="flex justify-end mt-6">
+        <div className="flex justify-end mt-6 space-x-4">
+          <input
+            type="reset"
+            value="Zurücksetzen"
+            className="bg-white text-sm py-1.5 px-3 rounded-md shadow font-semibold hover:bg-gray-200 transition-all"
+            onClick={() => location.reload()}
+          />
           <input
             id="submit"
             type="submit"
@@ -91,11 +109,12 @@ export default function App() {
         </div>
       </form>
       {/* <pre>{JSON.stringify(payload, null, 2)}</pre> */}
-      <LineItemsRenderer
+      {/* <LineItemsRenderer
         payload={payload}
         onItemDeleted={handleItemDeleted}
         onItemChanged={handleItemChanged}
-      />
+      /> */}
+      <Error message={error} payload={payload} setMessage={setError} />
     </>
   );
 }

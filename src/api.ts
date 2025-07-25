@@ -15,7 +15,7 @@ export async function createQuotation(
     },
   });
   if (response.status >= 200 && response.status < 300) {
-    return response.json() as Promise<string>;
+    return (await response.json()).id as string;
   } else {
     throw new Error(`${await response.text()} (${response.status})`);
   }
