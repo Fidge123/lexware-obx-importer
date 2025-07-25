@@ -90,7 +90,7 @@ export default function App() {
           />
         </div>
       </form>
-      <pre>{JSON.stringify(payload, null, 2)}</pre>
+      {/* <pre>{JSON.stringify(payload, null, 2)}</pre> */}
       <LineItemsRenderer
         payload={payload}
         onItemDeleted={handleItemDeleted}
