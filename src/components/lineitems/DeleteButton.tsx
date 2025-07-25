@@ -1,26 +1,17 @@
-import React from "react";
-
-interface DeleteButtonProps {
-  index: number;
-  onDelete: (index: number) => void;
-}
-
-export const DeleteButton: React.FC<DeleteButtonProps> = ({
-  index,
-  onDelete,
-}) => {
-  const handleClick = () => {
-    onDelete(index);
-  };
-
+export function DeleteButton({ index, onDelete }: Props) {
   return (
     <button
       type="button"
-      className="delete-button"
+      className="bg-red-500 text-white rounded h-7 w-7 text-sm cursor-pointer hover:bg-red-600 transition-colors"
       title="Position löschen"
-      onClick={handleClick}
+      onClick={() => onDelete(index)}
     >
       ×
     </button>
   );
-};
+}
+
+interface Props {
+  index: number;
+  onDelete: (index: number) => void;
+}

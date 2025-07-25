@@ -19,7 +19,7 @@ export function Error({ message, setMessage, payload }: Props) {
             Ein Fehler ist aufgetreten!
           </DialogTitle>
           <Description>{message}</Description>
-          <pre className="text-xs overflow-auto max-h-64 empty:hidden bg-gray-100 rounded border-gray-300 p-4">
+          <pre className="text-xs overflow-auto max-h-64 empty:hidden bg-gray-100 rounded p-4">
             {JSON.stringify(payload, null, 2)}
           </pre>
           <button

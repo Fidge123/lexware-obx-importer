@@ -1,4 +1,8 @@
-import React from "react";
+import {
+  Disclosure,
+  DisclosureButton,
+  DisclosurePanel,
+} from "@headlessui/react";
 import type {
   LineItem,
   CustomLineItem,
@@ -6,59 +10,7 @@ import type {
   TextLineItem,
 } from "../../types.ts";
 import { DeleteButton } from "./DeleteButton.tsx";
-
-interface LineItemComponentProps {
-  item: LineItem;
-  index: number;
-  onItemChanged: (index: number, item: LineItem) => void;
-  onItemDeleted: (index: number) => void;
-}
-
-const DescriptionElement: React.FC<{
-  description: string;
-  maxLength?: number;
-}> = ({ description, maxLength = 100 }) => {
-  const truncated =
-    description.length > maxLength
-      ? description.substring(0, maxLength)
-      : description;
-  const isTruncated = description.length > maxLength;
-
-  return (
-    <div className={`line-item-description ${isTruncated ? "truncated" : ""}`}>
-      {isTruncated ? (
-        <>
-          {truncated}
-          <div className="tooltip">{description}</div>
-        </>
-      ) : (
-        description
-      )}
-    </div>
-  );
-};
-
-const InputField: React.FC<{
-  label: string;
-  type: string;
-  value: string;
-  min?: string;
-  step?: string;
-  onChange: (value: string) => void;
-}> = ({ label, type, value, min, step, onChange }) => {
-  return (
-    <div className="line-item-input">
-      <label>{label}</label>
-      <input
-        type={type}
-        value={value}
-        min={min}
-        step={step}
-        onChange={(e) => onChange(e.target.value)}
-      />
-    </div>
-  );
-};
+import { InputField } from "./InputField.tsx";
 
 const isTextItem = (item: LineItem): item is TextLineItem => {
   return "type" in item && item.type === "text";
@@ -70,12 +22,12 @@ const hasEditableControls = (
   return "quantity" in item && "unitPrice" in item;
 };
 
-export const LineItemComponent: React.FC<LineItemComponentProps> = ({
+export function LineItemComponent({
   item,
   index,
   onItemChanged,
   onItemDeleted,
-}) => {
+}: Props) {
   const handleQuantityChange = (value: string) => {
     if (hasEditableControls(item)) {
       item.quantity = parseFloat(value) || 0;
@@ -92,35 +44,39 @@ export const LineItemComponent: React.FC<LineItemComponentProps> = ({
 
   return (
     <div
-      className={`line-item ${isTextItem(item) ? "text-item" : ""}`}
+      className={`py-4 px-4 space-y-3 ${isTextItem(item) ? "bg-gray-100" : ""}`}
       data-index={index.toString()}
     >
-      <div className="line-item-header">
-        <div className="line-item-name">
-          {item.name}
-          {item.description && (
-            <DescriptionElement description={item.description} />
-          )}
-        </div>
+      <div className="flex justify-between flex-col">
+        <h3>{item.name}</h3>
+        {item.description && (
+          <Disclosure>
+            <DisclosureButton
+              as="span"
+              className="text-left line-clamp-1 w-fit max-w-2xl text-gray-500 text-sm mt-1 hover:text-gray-800"
+            >
+              {item.description}
+            </DisclosureButton>
+            <DisclosurePanel className="bg-inherit">
+              <div className="text-sm">{item.description}</div>
+            </DisclosurePanel>
+          </Disclosure>
+        )}
       </div>
 
       {hasEditableControls(item) && (
-        <div className="line-item-controls">
+        <div className="flex gap-8 items-center">
           <InputField
             label="Anzahl"
             type="number"
             value={item.quantity.toString()}
-            min="0"
-            step="1"
             onChange={handleQuantityChange}
           />
 
           <InputField
-            label="Nettobetrag (€)"
+            label="Nettobetrag"
             type="number"
             value={item.unitPrice.netAmount.toString()}
-            min="0"
-            step="0.01"
             onChange={handleNetAmountChange}
           />
 
@@ -129,4 +85,11 @@ export const LineItemComponent: React.FC<LineItemComponentProps> = ({
       )}
     </div>
   );
-};
+}
+
+interface Props {
+  item: LineItem;
+  index: number;
+  onItemChanged: (index: number, item: LineItem) => void;
+  onItemDeleted: (index: number) => void;
+}

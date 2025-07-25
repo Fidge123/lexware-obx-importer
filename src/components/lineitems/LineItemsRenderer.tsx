@@ -18,9 +18,11 @@ export const LineItemsRenderer: React.FC<LineItemsRendererProps> = ({
   }
 
   return (
-    <div id="line-items-container">
-      <h3>Positionen</h3>
-      <div id="line-items-list">
+    <div className="mt-4 bg-white border border-gray-300 overflow-hidden rounded-lg shadow">
+      <h2 className="px-4 py-2 bg-gray-100 border-b-1 border-gray-300">
+        Positionen
+      </h2>
+      <div className="divide-gray-300 divide-y">
         {payload.lineItems.map((item, index) => (
           <LineItemComponent
             key={index}
