@@ -8,7 +8,7 @@ export function GroupingToggle({ onChange }: Props) {
       >
         <option value="y">{"Gruppiert (eine Zeile mit Stückzahl > 1)"}</option>
         <option value="n">
-          {"Nicht gruppiert (je eine Zeile mit Stückzahl = 1"}
+          {"Nicht gruppiert (je eine Zeile mit Stückzahl = 1)"}
         </option>
       </select>
     </label>
