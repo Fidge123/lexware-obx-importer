@@ -44,12 +44,12 @@ export interface Quotation {
 
 export interface Address {
   contactId?: string;
-  name?: string;
+  name: string;
   supplement?: string;
   street?: string;
   city?: string;
   zip?: string;
-  countryCode?: string;
+  countryCode: string;
 }
 
 export interface Contact {
@@ -88,10 +88,4 @@ export interface ContactsResponse {
   numberOfElements: number;
   size: number;
   number: number;
-}
-
-export interface ContactListItem {
-  id: string;
-  name: string;
-  address?: Address;
 }

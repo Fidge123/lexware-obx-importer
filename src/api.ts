@@ -1,5 +1,5 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import type { ContactListItem, ContactsResponse, Quotation } from "./types";
+import type { Address, ContactsResponse, Quotation } from "./types";
 
 export async function createQuotation(
   quotation: Quotation,
@@ -24,7 +24,7 @@ export async function createQuotation(
 export async function getContacts(
   apiKey: string,
   filter?: string,
-): Promise<ContactListItem[]> {
+): Promise<Address[]> {
   const url = new URL("https://api.lexware.io/v1/contacts");
 
   url.searchParams.append("customer", "true");
@@ -50,9 +50,12 @@ export async function getContacts(
       const address = contact.addresses?.billing?.[0];
 
       return {
-        id: contact.id,
-        name: contact.company?.name ?? contact.person?.lastName ?? "",
-        address: { contactId: contact.id, ...address },
+        contactId: contact.id,
+        name:
+          contact.company?.name ??
+          `${contact.person?.firstName} ${contact.person?.lastName}`.trim(),
+        countryCode: "DE",
+        ...address,
       };
     });
   } else {

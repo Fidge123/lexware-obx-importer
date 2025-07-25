@@ -1,6 +1,6 @@
 import { useState, useEffect, type FormEvent } from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import type { Quotation, LineItem, ContactListItem } from "./types.ts";
+import type { Quotation, LineItem, Address } from "./types.ts";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
 import { DropZone } from "./components/form/DropZone.tsx";
 import { createPayload } from "./obx.ts";
@@ -17,8 +17,7 @@ export default function App() {
   const [grouping, setGrouping] = useState(true);
   const [description, setDescription] = useState(true);
   const [xmlDoc, setXmlDoc] = useState<Document | undefined>();
-  const [selectedCustomer, setSelectedCustomer] =
-    useState<ContactListItem | null>(null);
+  const [customer, setCustomer] = useState<Address | undefined>();
   const [payload, setPayload] = useState<Quotation | undefined>();
 
   useEffect(() => {
@@ -28,19 +27,10 @@ export default function App() {
   useEffect(() => {
     if (xmlDoc) {
       setPayload(
-        createPayload(
-          xmlDoc,
-          multiplier,
-          description,
-          grouping,
-          selectedCustomer?.address,
-        ),
+        createPayload(xmlDoc, multiplier, description, grouping, customer),
       );
     }
-  }, [xmlDoc, multiplier, grouping, description, selectedCustomer]);
-
-  const handleCustomerChange = (customer: ContactListItem | null) =>
-    setSelectedCustomer(customer);
+  }, [xmlDoc, multiplier, grouping, description, customer]);
 
   const handleItemDeleted = (index: number) => {
     if (payload) {
@@ -85,10 +75,7 @@ export default function App() {
         <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
         <ApiKeyInput />
         <MultiplierInput onChange={setMultiplier} />
-        <CustomerInput
-          value={selectedCustomer}
-          onChange={handleCustomerChange}
-        />
+        <CustomerInput onChange={setCustomer} />
         <GroupingToggle onChange={setGrouping} />
         <DescriptionToggle onChange={setDescription} />
         <div className="formactions">
@@ -100,7 +87,7 @@ export default function App() {
           />
         </div>
       </form>
-      {/* <pre>{JSON.stringify(payload, null, 2)}</pre> */}
+      <pre>{JSON.stringify(payload, null, 2)}</pre>
       <LineItemsRenderer
         payload={payload}
         onItemDeleted={handleItemDeleted}

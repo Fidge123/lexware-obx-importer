@@ -295,7 +295,7 @@ export function createPayload(
   return {
     voucherDate: now.toISOString(),
     expirationDate: expiration.toISOString(),
-    address: address,
+    address: address ?? { name: "Testkunde", countryCode: "DE" },
     lineItems: [
       ...aggregateDuplicateLists(
         getPrefix(parsed).flatMap(([prefix, root]) =>
