@@ -1,80 +1,14 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="stylesheet" href="/src/styles.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lexware OBX Importer</title>
-    <script type="module" src="/src/main.ts" defer></script>
   </head>
 
   <body>
-    <h1>Lexware OBX Importer<small id="version"></small></h1>
-
-    <form>
-      <div id="dropZone">
-        <p id="dropText">Drag & Drop oder anklicken</p>
-      </div>
-      <input
-        id="obx"
-        aria-label="OBX Datei"
-        type="file"
-        accept=".obx,application/obx+xml"
-      />
-
-      <label>
-        API Key
-        <input id="apiKey" type="text" />
-      </label>
-
-      <label>
-        Aufschlag in %
-        <input id="aufschlag" type="number" value="0" />
-      </label>
-
-      <label>
-        Kunde
-        <div class="customer-select-container">
-          <input
-            id="customer"
-            type="text"
-            placeholder="Testkunde"
-            autocomplete="off"
-          />
-          <div id="customer-dropdown" class="customer-dropdown">
-            <div class="loading-indicator" style="display: none">Lädt...</div>
-            <ul id="customer-list"></ul>
-          </div>
-        </div>
-      </label>
-
-      <label>
-        Produkte mit gleichem Preis und Text
-        <select id="group">
-          <option value="y" selected>
-            Gruppiert (eine Zeile mit Stückzahl > 1)
-          </option>
-          <option value="n">
-            Nicht Gruppiert (je eine Zeile mit Stückzahl = 1)
-          </option>
-        </select>
-      </label>
-
-      <label>
-        Beschreibungen
-        <select id="isLong">
-          <option value="short">Kurzform in Beschreibung des Produkts</option>
-          <option value="long" selected>Langform in extra Zeile(n)</option>
-        </select>
-      </label>
-
-      <div class="formactions">
-        <input id="submit" type="submit" value="Importieren" disabled />
-      </div>
-    </form>
-
-    <samp>
-      <pre id="preview"></pre>
-    </samp>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

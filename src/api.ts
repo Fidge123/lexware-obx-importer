@@ -1,18 +1,10 @@
 import { fetch } from "@tauri-apps/plugin-http";
-import { ContactListItem, ContactsResponse, Quotation } from "./types";
-
-interface Response {
-  id: string;
-  resourceUri: string;
-  createdDate: string;
-  updatedDate: string;
-  version: number;
-}
+import type { Address, ContactsResponse, Quotation } from "./types";
 
 export async function createQuotation(
   quotation: Quotation,
-  apiKey: string
-): Promise<Response> {
+  apiKey: string,
+): Promise<string> {
   const response = await fetch("https://api.lexware.io/v1/quotations", {
     method: "POST",
     body: JSON.stringify(quotation),
@@ -23,7 +15,7 @@ export async function createQuotation(
     },
   });
   if (response.status >= 200 && response.status < 300) {
-    return response.json();
+    return (await response.json()).id as string;
   } else {
     throw new Error(`${await response.text()} (${response.status})`);
   }
@@ -31,9 +23,9 @@ export async function createQuotation(
 
 export async function getContacts(
   apiKey: string,
-  filter?: string
-): Promise<ContactListItem[]> {
-  let url = new URL("https://api.lexware.io/v1/contacts");
+  filter?: string,
+): Promise<Address[]> {
+  const url = new URL("https://api.lexware.io/v1/contacts");
 
   url.searchParams.append("customer", "true");
   url.searchParams.append("page", "0");
@@ -52,15 +44,18 @@ export async function getContacts(
   });
 
   if (response.status >= 200 && response.status < 300) {
-    const data: ContactsResponse = await response.json();
+    const data = (await response.json()) as ContactsResponse;
 
     return data.content.map((contact) => {
       const address = contact.addresses?.billing?.[0];
 
       return {
-        id: contact.id,
-        name: contact.company?.name ?? contact.person?.lastName ?? "",
-        address,
+        contactId: contact.id,
+        name:
+          contact.company?.name ??
+          `${contact.person?.firstName} ${contact.person?.lastName}`.trim(),
+        countryCode: "DE",
+        ...address,
       };
     });
   } else {

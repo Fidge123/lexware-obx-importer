@@ -32,14 +32,7 @@ export type LineItem = TextLineItem | CustomLineItem | SubLineItem;
 export interface Quotation {
   voucherDate: string;
   expirationDate: string;
-  address:
-    | {
-        contactId: string;
-      }
-    | {
-        name: string;
-        countryCode: string;
-      };
+  address: Address;
   lineItems: LineItem[];
   totalPrice: {
     currency: string;
@@ -51,12 +44,12 @@ export interface Quotation {
 
 export interface Address {
   contactId?: string;
-  name?: string;
+  name: string;
   supplement?: string;
   street?: string;
   city?: string;
   zip?: string;
-  countryCode?: string;
+  countryCode: string;
 }
 
 export interface Contact {
@@ -95,10 +88,4 @@ export interface ContactsResponse {
   numberOfElements: number;
   size: number;
   number: number;
-}
-
-export interface ContactListItem {
-  id: string;
-  name: string;
-  address?: Address;
 }
