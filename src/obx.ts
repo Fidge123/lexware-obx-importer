@@ -230,28 +230,7 @@ function aggregateDuplicateLists(
     .flat();
 }
 
-function getShippingCosts(parsed: Document): LineItem {
-  const volumes = getPrefix(parsed).flatMap(([, root]) =>
-    get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='volume']/@value", context) ??
-          get(".//feature[@name='VOLUMEN']/@value", context) ??
-          get(".//feature[@name='Volumen']/@value", context),
-      )
-      .map((v) => parseFloat((v as Attr).value || "0")),
-  );
-
-  const weights = getPrefix(parsed).flatMap(([, root]) =>
-    get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='netWeight']/@originalValue", context) ??
-          get(".//feature[@name='GEWICHT']/@value", context) ??
-          get(".//feature[@name='Gewicht']/@value", context),
-      )
-      .map((v) => parseFloat((v as Attr).value || "0")),
-  );
+function getShippingCosts(volumes: number[], weights: number[]): LineItem {
   const disclaimer = `Warenlieferungen erfolgen DDP (Delivered Duty Paid). Die Anlieferung umfasst den Transport in den Aufstellungsraum bzw. wenn dies nicht möglich ist, hinter die erste verschlossene Tür.`;
 
   return {
@@ -277,8 +256,63 @@ function getShippingCosts(parsed: Document): LineItem {
   };
 }
 
-export function createPayload(
+function getVolumes(parsed: Document) {
+  return getPrefix(parsed).flatMap(([, root]) =>
+    get("./bskArticle", root)
+      .flatMap(
+        (context) =>
+          get(".//packInfo[@key='volume']/@value", context) ??
+          get(".//feature[@name='VOLUMEN']/@value", context) ??
+          get(".//feature[@name='Volumen']/@value", context),
+      )
+      .map((v) => parseFloat((v as Attr).value || "0")),
+  );
+}
+
+function getWeights(parsed: Document) {
+  return getPrefix(parsed).flatMap(([, root]) =>
+    get("./bskArticle", root)
+      .flatMap(
+        (context) =>
+          get(".//packInfo[@key='netWeight']/@originalValue", context) ??
+          get(".//feature[@name='GEWICHT']/@value", context) ??
+          get(".//feature[@name='Gewicht']/@value", context),
+      )
+      .map((v) => parseFloat((v as Attr).value || "0")),
+  );
+}
+
+function processDocument(
   parsed: Document,
+  includeDescription: boolean,
+  groupLineItems: boolean,
+): LineItem[] {
+  return aggregateDuplicateLists(
+    getPrefix(parsed).flatMap(([prefix, root]) =>
+      get("./bskArticle", root).map((context) =>
+        createLineItem(context, prefix, includeDescription),
+      ),
+    ),
+    groupLineItems,
+  );
+}
+
+function calculateRoomTotal(lineItems: LineItem[]): number {
+  return lineItems.reduce((total, item) => {
+    if (
+      "type" in item &&
+      item.type === "custom" &&
+      "unitPrice" in item &&
+      item.unitPrice
+    ) {
+      return total + item.unitPrice.netAmount * item.quantity;
+    }
+    return total;
+  }, 0);
+}
+
+export function createPayload(
+  parsed: Document | Record<string, Document>,
   multiplierValue: number,
   includeDescription: boolean,
   groupLineItems: boolean,
@@ -295,21 +329,63 @@ export function createPayload(
     now.getDate() + 14,
   );
 
+  let allLineItems: LineItem[] = [];
+
+  if (typeof parsed === "object" && "documentElement" in parsed) {
+    const document = parsed as Document;
+    allLineItems = [
+      ...processDocument(document, includeDescription, groupLineItems),
+      getShippingCosts(getVolumes(document), getWeights(document)),
+    ];
+  } else {
+    const multipleDocuments = parsed;
+    const roomEntries = Object.entries(multipleDocuments);
+    const allDocuments: Document[] = [];
+
+    for (const [roomName, document] of roomEntries) {
+      allLineItems.push({
+        type: "text",
+        name: `Es folgen die Artikel für ${roomName}`,
+      });
+
+      const roomLineItems = processDocument(
+        document,
+        includeDescription,
+        groupLineItems,
+      );
+      allLineItems.push(...roomLineItems);
+
+      const roomTotal = calculateRoomTotal(roomLineItems);
+
+      allLineItems.push({
+        type: "text",
+        name: `Nettosumme ${roomName}: ${roomTotal.toLocaleString("de-DE", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        })} EUR`,
+      });
+
+      allDocuments.push(document);
+    }
+
+    const mergedShippingCosts = getShippingCosts(
+      allDocuments.reduce((volumes, doc) => {
+        volumes.push(...getVolumes(doc));
+        return volumes;
+      }, [] as number[]),
+      allDocuments.reduce((weights, doc) => {
+        weights.push(...getWeights(doc));
+        return weights;
+      }, [] as number[]),
+    );
+    allLineItems.push(mergedShippingCosts);
+  }
+
   return {
     voucherDate: now.toISOString(),
     expirationDate: expiration.toISOString(),
     address: address ?? { name: "Testkunde", countryCode: "DE" },
-    lineItems: [
-      ...aggregateDuplicateLists(
-        getPrefix(parsed).flatMap(([prefix, root]) =>
-          get("./bskArticle", root).map((context) =>
-            createLineItem(context, prefix, includeDescription),
-          ),
-        ),
-        groupLineItems,
-      ),
-      getShippingCosts(parsed),
-    ],
+    lineItems: allLineItems,
     totalPrice: { currency: "EUR" },
     taxConditions: { taxType: "net" },
   };

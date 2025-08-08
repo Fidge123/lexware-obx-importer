@@ -1,11 +1,11 @@
+import { expect, test } from "bun:test";
 import { readFile } from "node:fs/promises";
-import { test, expect } from "bun:test";
 import { DOMParser } from "@xmldom/xmldom";
 import xpath from "xpath";
 
 import { createPayload } from "./obx.ts";
-import { count } from "./util.ts";
 import type { CustomLineItem, LineItemWithType, Quotation } from "./types.ts";
+import { count } from "./util.ts";
 
 const utf8 = { encoding: "utf-8" } as const;
 const address = { name: "Testkunde", countryCode: "DE" };
@@ -204,4 +204,32 @@ test("generate valid json for another complex obx 7 with increased prices", asyn
       ).toBeLessThan(0.008);
     }
   }
+});
+
+test("generate valid json for multi-OBX project", async () => {
+  const parser = new DOMParser();
+  const obx1 = await readFile("examples/01.obx", utf8);
+  const obx2 = await readFile("examples/02.obx", utf8);
+  const result = JSON.parse(
+    await readFile("examples/01-02-long.json", utf8),
+  ) as Quotation;
+  const parsed1 = parser.parseFromString(
+    obx1,
+    "application/xml",
+  ) as unknown as Document;
+  const parsed2 = parser.parseFromString(
+    obx2,
+    "application/xml",
+  ) as unknown as Document;
+
+  expect(
+    createPayload(
+      { "Raum 1": parsed1, "Raum 2": parsed2 },
+      1,
+      true,
+      true,
+      address,
+      x,
+    ).lineItems,
+  ).toEqual(result.lineItems);
 });
