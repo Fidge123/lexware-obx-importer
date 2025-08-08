@@ -1,20 +1,21 @@
 import type {
+  Address,
+  CustomLineItem,
   LineItem,
   Quotation,
-  TextLineItem,
-  CustomLineItem,
   SubLineItem,
-  Address,
+  TextLineItem,
 } from "./types";
 
 let evaluator: XPathEvaluator;
-let mult: number;
+let multiplier: number;
 
 function iterate(xpathResult: XPathResult): Node[] {
   const array: Node[] = [];
-  let node: Node | null;
-  while ((node = xpathResult.iterateNext())) {
+  let node = xpathResult.iterateNext();
+  while (node) {
     array.push(node);
+    node = xpathResult.iterateNext();
   }
   return array;
 }
@@ -91,7 +92,7 @@ function createSubItems(
     ).map((item) =>
       item.unitPrice?.netAmount
         ? `${item.quantity}x ${item.name} | je ${(
-            item.unitPrice.netAmount * mult
+            item.unitPrice.netAmount * multiplier
           ).toFixed(2)} EUR${
             includeDescription ? `\n${item.description}\n` : ""
           }`
@@ -137,7 +138,8 @@ function createLineItem(
     " | " +
     getString("./description[@type='short']/text[@lang='de']", context);
   const price =
-    getNumber("./itemPrice[@type='sale'][@pd='1']/@value", context) * mult;
+    getNumber("./itemPrice[@type='sale'][@pd='1']/@value", context) *
+    multiplier;
   const currency =
     getString("./itemPrice[@type='sale'][@pd='1']/@currency", context) ?? "EUR";
   const subItems = createSubItems(
@@ -169,7 +171,8 @@ function createLineItem(
               `.//bskArticle/itemPrice[@type='sale'][@pd='1']/@value`,
               context,
             ).reduce(
-              (sum, curr) => sum + parseFloat(curr?.textContent ?? "0") * mult,
+              (sum, curr) =>
+                sum + parseFloat(curr?.textContent ?? "0") * multiplier,
               0,
             ),
         ),
@@ -213,7 +216,7 @@ function aggregateDuplicateLists(
             item[0].name === curr[0].name &&
             item[0].unitPrice?.netAmount === curr[0].unitPrice?.netAmount,
         );
-        if (item && item[0].quantity) {
+        if (item?.[0].quantity) {
           if (item.length < 2 || item[1].description === curr[1].description) {
             item[0].quantity += 1;
           }
@@ -276,14 +279,14 @@ function getShippingCosts(parsed: Document): LineItem {
 
 export function createPayload(
   parsed: Document,
-  multVal: number,
+  multiplierValue: number,
   includeDescription: boolean,
   groupLineItems: boolean,
   address: Address = { name: "Testkunde", countryCode: "DE" },
   xpath: XPathEvaluator = new XPathEvaluator(),
 ): Quotation {
   evaluator = xpath;
-  mult = isNaN(multVal) ? 1 : multVal;
+  multiplier = Number.isNaN(multiplierValue) ? 1 : multiplierValue;
 
   const now = new Date();
   const expiration = new Date(

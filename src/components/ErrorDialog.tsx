@@ -4,9 +4,9 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react";
-import { Quotation } from "../types";
+import type { Quotation } from "../types";
 
-export function Error({ message, setMessage, payload }: Props) {
+export function ErrorDialog({ message, setMessage, payload }: Props) {
   return (
     <Dialog
       open={message !== ""}
@@ -23,6 +23,7 @@ export function Error({ message, setMessage, payload }: Props) {
             {JSON.stringify(payload, null, 2)}
           </pre>
           <button
+            type="button"
             onClick={() => setMessage("")}
             className="border rounded-lg bg-blue-500 text-white px-4 py-2 hover:bg-blue-600 transition-colors"
           >

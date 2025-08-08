@@ -1,22 +1,22 @@
-import { useState, useEffect, type FormEvent } from "react";
-import { getVersion } from "@tauri-apps/api/app";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import type { Quotation, LineItem, Address } from "./types.ts";
-import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
-import { DropZone } from "./components/form/DropZone.tsx";
-import { createPayload } from "./obx.ts";
-import { ApiKeyInput } from "./components/form/ApiKeyInput.tsx";
-import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
-import { CustomerInput } from "./components/form/CustomerInput.tsx";
-import { GroupingToggle } from "./components/form/GroupingToggle.tsx";
-import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
-import { createQuotation } from "./api.ts";
-import { Error } from "./components/Error.tsx";
 import {
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
 } from "@headlessui/react";
+import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { type FormEvent, useEffect, useState } from "react";
+import { createQuotation } from "./api.ts";
+import { ErrorDialog } from "./components/ErrorDialog.tsx";
+import { ApiKeyInput } from "./components/form/ApiKeyInput.tsx";
+import { CustomerInput } from "./components/form/CustomerInput.tsx";
+import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
+import { DropZone } from "./components/form/DropZone.tsx";
+import { GroupingToggle } from "./components/form/GroupingToggle.tsx";
+import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
+import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
+import { createPayload } from "./obx.ts";
+import type { Address, LineItem, Quotation } from "./types.ts";
 
 export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
@@ -131,7 +131,7 @@ export default function App() {
         onItemChanged={handleItemChanged}
       />
 
-      <Error message={error} payload={payload} setMessage={setError} />
+      <ErrorDialog message={error} payload={payload} setMessage={setError} />
     </>
   );
 }
