@@ -192,7 +192,7 @@ function aggregateDuplicates<T extends CustomLineItem | SubLineItem>(
         item.name === curr.name &&
         item.unitPrice?.netAmount === curr.unitPrice?.netAmount,
     );
-    if (item && item.quantity) {
+    if (item?.quantity) {
       item.quantity += 1;
     } else {
       items.push(curr);
