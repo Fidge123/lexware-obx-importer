@@ -6,7 +6,7 @@ export function MultiplierInput({ onChange }: Props) {
         type="number"
         autoComplete="off"
         defaultValue={0}
-        onChange={(e) => onChange(e.target.valueAsNumber ?? 0)}
+        onChange={(e) => onChange(1 + (e.target.valueAsNumber ?? 0) / 100)}
         className="w-sm rounded-md border border-gray-300 bg-white px-3 py-1.5 shadow focus:border-blue-500"
       />
     </label>

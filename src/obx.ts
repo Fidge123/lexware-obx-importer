@@ -345,7 +345,7 @@ export function createPayload(
     for (const [roomName, document] of roomEntries) {
       allLineItems.push({
         type: "text",
-        name: `Es folgen die Artikel für ${roomName}`,
+        name: `Es folgen die Artikel für ${roomName.replace(".obx", "")}`,
       });
 
       const roomLineItems = processDocument(

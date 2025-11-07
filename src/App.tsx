@@ -23,7 +23,7 @@ export default function App() {
   const [multiplier, setMultiplier] = useState(1);
   const [grouping, setGrouping] = useState(true);
   const [description, setDescription] = useState(true);
-  const [xmlDoc, setXmlDoc] = useState<Document | undefined>();
+  const [xmlDocs, setXmlDocs] = useState<Record<string, Document>>({});
   const [customer, setCustomer] = useState<Address | undefined>();
   const [payload, setPayload] = useState<Quotation | undefined>();
   const [error, setError] = useState<string>("");
@@ -34,12 +34,24 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (xmlDoc) {
+    if (Object.keys(xmlDocs).length === 1) {
       setPayload(
-        createPayload(xmlDoc, multiplier, description, grouping, customer),
+        createPayload(
+          Object.values(xmlDocs)[0],
+          multiplier,
+          description,
+          grouping,
+          customer,
+        ),
       );
+    } else if (Object.keys(xmlDocs).length > 1) {
+      setPayload(
+        createPayload(xmlDocs, multiplier, description, grouping, customer),
+      );
+    } else {
+      setPayload(undefined);
     }
-  }, [xmlDoc, multiplier, grouping, description, customer]);
+  }, [xmlDocs, multiplier, grouping, description, customer]);
 
   const handleItemDeleted = (index: number) => {
     if (payload) {
@@ -57,10 +69,21 @@ export default function App() {
     }
   };
 
-  async function handleFileSelect(content: Promise<string> | string) {
+  async function handleFileSelect(
+    content: Promise<string> | string,
+    filename: string,
+  ) {
     const parser = new DOMParser();
     const parsed = parser.parseFromString(await content, "application/xml");
-    setXmlDoc(parsed);
+    setXmlDocs((prev) => ({ ...prev, [filename]: parsed }));
+  }
+
+  function handleFileRemove(filename: string) {
+    setXmlDocs((prev) => {
+      const next = { ...prev };
+      delete next[filename];
+      return next;
+    });
   }
 
   function submit(e: FormEvent<HTMLFormElement>) {
@@ -109,7 +132,11 @@ export default function App() {
       />
 
       <form onSubmit={submit} className="w-full max-w-full space-y-2">
-        <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
+        <DropZone
+          loadedFiles={Object.keys(xmlDocs)}
+          onFileSelect={(c, filename) => void handleFileSelect(c, filename)}
+          onFileRemove={handleFileRemove}
+        />
         <MultiplierInput onChange={setMultiplier} />
         <CustomerInput onChange={setCustomer} />
         <div className="mt-4 flex justify-end space-x-4">

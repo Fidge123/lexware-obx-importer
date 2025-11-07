@@ -23,7 +23,7 @@ export const LineItemsRenderer: React.FC<LineItemsRendererProps> = ({
       <div className="divide-y divide-gray-300">
         {payload.lineItems.map((item, index) => (
           <LineItemComponent
-            key={item.name}
+            key={`${item.name}-${index}`}
             item={item}
             index={index}
             onItemChanged={onItemChanged}
