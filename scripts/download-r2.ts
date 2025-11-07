@@ -11,6 +11,8 @@ type S3ListResponse = {
 async function downloadExamples(branch: string): Promise<void> {
   const config = getR2Config();
   console.log(`📥 Downloading examples from R2 for branch: ${branch}`);
+  console.log(`🔗 R2 Endpoint: ${config.accountId}.r2.cloudflarestorage.com`);
+  console.log(`🪣 Bucket: ${config.bucketName}`);
 
   const s3 = createS3Client(config);
   const examplesDir = join(import.meta.dir, "..", "examples");
@@ -20,6 +22,7 @@ async function downloadExamples(branch: string): Promise<void> {
 
   try {
     // List all objects with the branch prefix
+    console.log(`🔍 Listing objects with prefix: ${branch}/`);
     const response = await s3.list({ prefix: `${branch}/` });
     const contents = response as unknown as S3ListResponse;
 
@@ -55,6 +58,14 @@ async function downloadExamples(branch: string): Promise<void> {
     }
   } catch (error) {
     console.error("❌ Failed to download examples:", error);
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
+    console.error("\n💡 Troubleshooting:");
+    console.error("  • Verify R2 credentials are correct");
+    console.error("  • Check that the bucket name is correct");
+    console.error("  • Ensure network connectivity to R2");
     process.exit(1);
   }
 }
@@ -63,14 +74,14 @@ async function downloadExamples(branch: string): Promise<void> {
 async function main() {
   const branchArg = process.argv[2];
   const branch = branchArg || (await getCurrentBranch());
-  
+
   if (!branch) {
     console.error("❌ Could not determine branch name");
     console.error("Usage: bun run scripts/download-r2.ts [branch-name]");
     console.error("Or run from a git repository with a checked out branch");
     process.exit(1);
   }
-  
+
   await downloadExamples(branch);
 }
 
