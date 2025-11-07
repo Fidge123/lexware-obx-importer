@@ -4,8 +4,8 @@ import {
   DisclosurePanel,
 } from "@headlessui/react";
 import type {
-  LineItem,
   CustomLineItem,
+  LineItem,
   SubLineItem,
   TextLineItem,
 } from "../../types.ts";

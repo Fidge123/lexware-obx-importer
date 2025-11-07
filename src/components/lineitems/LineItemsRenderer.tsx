@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import type { LineItem, Quotation } from "../../types.ts";
 import { LineItemComponent } from "./LineItemComponent.tsx";
 
@@ -23,7 +23,7 @@ export const LineItemsRenderer: React.FC<LineItemsRendererProps> = ({
       <div className="divide-gray-300 divide-y">
         {payload.lineItems.map((item, index) => (
           <LineItemComponent
-            key={index}
+            key={item.name}
             item={item}
             index={index}
             onItemChanged={onItemChanged}

@@ -1,6 +1,7 @@
-import React, { useState } from "react";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { readTextFile } from "@tauri-apps/plugin-fs";
+import type React from "react";
+import { useState } from "react";
 
 interface DropZoneProps {
   onFileSelect: (content: Promise<string>) => void;

@@ -18,7 +18,7 @@ The application is built for macOS using Bun as the runtime and package manager.
 
 ### Development Tools
 
-- **Linting**: ESLint v9 with TypeScript ESLint, React plugins, and Prettier integration
+- **Linting & Formatting**: Biome (all-in-one toolchain for linting and formatting)
 - **Testing**: Bun test with @xmldom/xmldom for XML parsing tests
 - **Package Manager**: Bun (uses bun.lockb)
 

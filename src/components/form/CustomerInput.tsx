@@ -1,12 +1,12 @@
-import { useEffect, useState } from "react";
-import { getContacts } from "../../api";
-import { Address } from "../../types";
 import {
   Combobox,
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
 } from "@headlessui/react";
+import { useEffect, useState } from "react";
+import { getContacts } from "../../api";
+import type { Address } from "../../types";
 
 export function CustomerInput({ onChange }: Props) {
   const [customers, setCustomers] = useState<Address[]>([]);
