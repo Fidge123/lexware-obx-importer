@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { createS3Client, getCurrentBranch, getR2Config } from "./r2-utils";
 
 type S3ListResponse = {
-  Contents?: Array<{ Key?: string }>;
+  contents?: Array<{ key?: string }>;
 };
 
 async function downloadExamples(branch: string): Promise<void> {
@@ -28,19 +28,19 @@ async function downloadExamples(branch: string): Promise<void> {
 
     let downloadedCount = 0;
 
-    if (contents.Contents) {
-      for (const object of contents.Contents) {
-        if (!object.Key) continue;
+    if (contents.contents) {
+      for (const object of contents.contents) {
+        if (!object.key) continue;
 
         // Extract filename from key (remove branch prefix)
-        const filename = object.Key.replace(`${branch}/`, "");
+        const filename = object.key.replace(`${branch}/`, "");
         if (!filename) continue;
 
         const filePath = join(examplesDir, filename);
 
         try {
           // Download file using s3.file() method
-          const file = s3.file(object.Key);
+          const file = s3.file(object.key);
           const fileData = await file.arrayBuffer();
           await Bun.write(filePath, fileData);
           console.log(`✓ ${filename}`);
