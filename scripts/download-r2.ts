@@ -2,14 +2,10 @@
 
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import {
-	createS3Client,
-	getCurrentBranch,
-	getR2Config,
-} from "./r2-utils";
+import { createS3Client, getCurrentBranch, getR2Config } from "./r2-utils";
 
 type S3ListResponse = {
-	Contents?: Array<{ Key?: string }>;
+  Contents?: Array<{ Key?: string }>;
 };
 
 async function downloadExamples(branch: string): Promise<void> {

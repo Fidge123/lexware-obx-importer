@@ -3,16 +3,16 @@
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import {
-	type R2Config,
-	createS3Client,
-	getCurrentBranch,
-	getLocalAndRemoteBranches,
-	getR2Config,
-	getR2Endpoint,
+  createS3Client,
+  getCurrentBranch,
+  getLocalAndRemoteBranches,
+  getR2Config,
+  getR2Endpoint,
+  type R2Config,
 } from "./r2-utils";
 
 type S3ListResponse = {
-	Contents?: Array<{ Key?: string; LastModified?: string }>;
+  Contents?: Array<{ Key?: string; LastModified?: string }>;
 };
 
 async function uploadExamples(branch: string): Promise<void> {
