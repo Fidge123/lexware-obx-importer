@@ -63,6 +63,14 @@ async function downloadExamples(branch: string): Promise<void> {
 async function main() {
   const branchArg = process.argv[2];
   const branch = branchArg || (await getCurrentBranch());
+  
+  if (!branch) {
+    console.error("❌ Could not determine branch name");
+    console.error("Usage: bun run scripts/download-r2.ts [branch-name]");
+    console.error("Or run from a git repository with a checked out branch");
+    process.exit(1);
+  }
+  
   await downloadExamples(branch);
 }
 
