@@ -9,13 +9,14 @@
     "build:macos": "bun tauri build --bundles app",
     "preview": "vite preview",
     "tauri": "tauri",
+    "test": "bun test",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "sync:r2": "bun run sync-r2.ts",
-    "sync:r2:cleanup": "bun run sync-r2.ts cleanup",
-    "download:r2": "bun run download-r2.ts"
+    "sync:r2": "bun run scripts/sync-r2.ts",
+    "sync:r2:cleanup": "bun run scripts/sync-r2.ts cleanup",
+    "download:r2": "bun run scripts/download-r2.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

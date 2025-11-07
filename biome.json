@@ -60,7 +60,7 @@
   },
   "overrides": [
     {
-      "includes": ["create_release.ts", "vite.config.ts"],
+      "includes": ["scripts/*.ts", "vite.config.ts"],
       "linter": {
         "enabled": false
       },
