@@ -11,7 +11,7 @@ export async function createQuotation(
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
-      Authorization: "Bearer " + apiKey,
+      Authorization: `Bearer·${apiKey}`,
     },
   });
   if (response.status >= 200 && response.status < 300) {
@@ -39,7 +39,7 @@ export async function getContacts(
     method: "GET",
     headers: {
       Accept: "application/json",
-      Authorization: "Bearer " + apiKey,
+      Authorization: `Bearer ${apiKey}`,
     },
   });
 

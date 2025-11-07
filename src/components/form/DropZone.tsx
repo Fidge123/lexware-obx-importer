@@ -35,7 +35,7 @@ export function DropZone({ onFileSelect }: DropZoneProps) {
     }
   };
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = (event: React.DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
     const file = event.dataTransfer.files[0];
     if (file) {
@@ -44,7 +44,7 @@ export function DropZone({ onFileSelect }: DropZoneProps) {
     }
   };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = (event: React.DragEvent<HTMLButtonElement>) => {
     event.preventDefault();
     setDropText("+");
   };
@@ -56,16 +56,16 @@ export function DropZone({ onFileSelect }: DropZoneProps) {
 
   return (
     <>
-      <div
+      <button
+        type="button"
         id="dropZone"
-        className="bg-white text-gray-500 hover:border-blue-500 hover:bg-blue-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center"
+        className="w-full cursor-pointer rounded-xl border-2 border-gray-300 border-dashed bg-white p-8 text-center text-gray-500 hover:border-blue-500 hover:bg-blue-50"
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onClick={handleClick}
-        style={{ cursor: "pointer" }}
       >
         <p>{dropText}</p>
-      </div>
+      </button>
       <input
         id="fileInput"
         type="file"

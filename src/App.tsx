@@ -83,43 +83,43 @@ export default function App() {
 
   return (
     <>
-      <h1 className="text-3xl font-medium my-4">
+      <h1 className="my-4 font-medium text-3xl">
         Lexware OBX Importer
-        <small className="text-xs font-light text-gray-400 px-2">
+        <small className="px-2 font-light text-gray-400 text-xs">
           {version}
         </small>
       </h1>
 
-      <form onSubmit={submit} className="space-y-2 max-w-full w-full">
+      <form onSubmit={submit} className="w-full max-w-full space-y-2">
         <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
         <ApiKeyInput onChange={setApiKey} />
         <MultiplierInput onChange={setMultiplier} />
         <CustomerInput onChange={setCustomer} />
         <GroupingToggle onChange={setGrouping} />
         <DescriptionToggle onChange={setDescription} />
-        <div className="flex justify-end mt-4 space-x-4">
+        <div className="mt-4 flex justify-end space-x-4">
           <input
             type="reset"
             value="Zurücksetzen"
-            className="bg-white text-sm py-1.5 px-3 rounded-md shadow font-semibold hover:bg-gray-200 transition-all"
+            className="rounded-md bg-white px-3 py-1.5 font-semibold text-sm shadow transition-all hover:bg-gray-200"
             onClick={() => location.reload()}
           />
           <input
             id="submit"
             type="submit"
             value="Importieren"
-            className="bg-blue-500 text-white text-sm py-1.5 px-3 rounded-md shadow font-semibold hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-md bg-blue-500 px-3 py-1.5 font-semibold text-sm text-white shadow transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!apiKey}
           />
         </div>
       </form>
       {payload && (
         <Disclosure as="div" className="max-w-full">
-          <DisclosureButton className="text-gray-300 hover:text-gray-600 text-sm">
+          <DisclosureButton className="text-gray-300 text-sm hover:text-gray-600">
             JSON Vorschau anzeigen
           </DisclosureButton>
           <DisclosurePanel>
-            <pre className="text-xs overflow-auto max-h-64 bg-white rounded border border-gray-300 p-4 ">
+            <pre className="max-h-64 overflow-auto rounded border border-gray-300 bg-white p-4 text-xs">
               {JSON.stringify(payload, null, 2)}
             </pre>
           </DisclosurePanel>

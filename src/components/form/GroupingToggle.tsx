@@ -4,7 +4,7 @@ export function GroupingToggle({ onChange }: Props) {
       Produkte mit gleichem Preis und Text
       <select
         onChange={(e) => onChange(e.currentTarget.value === "y")}
-        className="w-sm py-1.5 px-3 rounded-md border border-gray-300 bg-white shadow focus:border-blue-500 appearance-none"
+        className="w-sm appearance-none rounded-md border border-gray-300 bg-white px-3 py-1.5 shadow focus:border-blue-500"
       >
         <option value="y">{"Gruppiert (eine Zeile mit Stückzahl > 1)"}</option>
         <option value="n">

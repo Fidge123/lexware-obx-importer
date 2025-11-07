@@ -18,7 +18,7 @@ export function ApiKeyInput({ onChange }: Props) {
         autoComplete="off"
         value={key}
         onChange={(e) => setKey(e.target.value)}
-        className="w-sm py-1.5 px-3 rounded-md border border-gray-300 bg-white shadow focus:border-blue-500"
+        className="w-sm rounded-md border border-gray-300 bg-white px-3 py-1.5 shadow focus:border-blue-500"
       />
     </label>
   );
