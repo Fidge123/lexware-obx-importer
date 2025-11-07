@@ -7,14 +7,13 @@ import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { type FormEvent, useEffect, useState } from "react";
 import { createQuotation } from "./api.ts";
+import { Cog } from "./components/Cog.tsx";
 import { ErrorDialog } from "./components/ErrorDialog.tsx";
-import { ApiKeyInput } from "./components/form/ApiKeyInput.tsx";
 import { CustomerInput } from "./components/form/CustomerInput.tsx";
-import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
 import { DropZone } from "./components/form/DropZone.tsx";
-import { GroupingToggle } from "./components/form/GroupingToggle.tsx";
 import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
+import { SettingsModal } from "./components/SettingsModal.tsx";
 import { createPayload } from "./obx.ts";
 import type { Address, LineItem, Quotation } from "./types.ts";
 
@@ -28,6 +27,7 @@ export default function App() {
   const [customer, setCustomer] = useState<Address | undefined>();
   const [payload, setPayload] = useState<Quotation | undefined>();
   const [error, setError] = useState<string>("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     void getVersion().then(setVersion);
@@ -83,20 +83,35 @@ export default function App() {
 
   return (
     <>
-      <h1 className="my-4 font-medium text-3xl">
-        Lexware OBX Importer
-        <small className="px-2 font-light text-gray-400 text-xs">
-          {version}
-        </small>
-      </h1>
+      <div className="my-4 flex items-center justify-between">
+        <h1 className="font-medium text-3xl">
+          Lexware OBX Importer
+          <small className="px-2 font-light text-gray-400 text-xs">
+            {version}
+          </small>
+        </h1>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="text-gray-400 transition-colors hover:text-gray-600"
+          aria-label="Einstellungen öffnen"
+        >
+          <Cog />
+        </button>
+      </div>
+
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onApiKeyChange={setApiKey}
+        onGroupingChange={setGrouping}
+        onDescriptionChange={setDescription}
+      />
 
       <form onSubmit={submit} className="w-full max-w-full space-y-2">
         <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
-        <ApiKeyInput onChange={setApiKey} />
         <MultiplierInput onChange={setMultiplier} />
         <CustomerInput onChange={setCustomer} />
-        <GroupingToggle onChange={setGrouping} />
-        <DescriptionToggle onChange={setDescription} />
         <div className="mt-4 flex justify-end space-x-4">
           <input
             type="reset"
