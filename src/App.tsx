@@ -56,7 +56,7 @@ export default function App() {
   const handleItemDeleted = (index: number) => {
     if (payload) {
       const newPayload = { ...payload };
-      newPayload.lineItems.splice(index, 1);
+      newPayload.lineItems = newPayload.lineItems.filter((_, i) => i !== index);
       setPayload(newPayload);
     }
   };
@@ -97,7 +97,7 @@ export default function App() {
           location.reload();
         })
         .catch((err) => {
-          setError(`${err}`);
+          setError(err instanceof Error ? err.message : String(err));
         });
     } else {
       setError("Keine Daten zum Importieren vorhanden!");
