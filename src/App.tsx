@@ -1,22 +1,21 @@
-import { useState, useEffect, type FormEvent } from "react";
-import { getVersion } from "@tauri-apps/api/app";
-import { openUrl } from "@tauri-apps/plugin-opener";
-import type { Quotation, LineItem, Address } from "./types.ts";
-import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
-import { DropZone } from "./components/form/DropZone.tsx";
-import { createPayload } from "./obx.ts";
-import { ApiKeyInput } from "./components/form/ApiKeyInput.tsx";
-import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
-import { CustomerInput } from "./components/form/CustomerInput.tsx";
-import { GroupingToggle } from "./components/form/GroupingToggle.tsx";
-import { DescriptionToggle } from "./components/form/DescriptionToggle.tsx";
-import { createQuotation } from "./api.ts";
-import { Error } from "./components/Error.tsx";
 import {
   Disclosure,
   DisclosureButton,
   DisclosurePanel,
 } from "@headlessui/react";
+import { getVersion } from "@tauri-apps/api/app";
+import { openUrl } from "@tauri-apps/plugin-opener";
+import { type FormEvent, useEffect, useState } from "react";
+import { createQuotation } from "./api.ts";
+import { Cog } from "./components/Cog.tsx";
+import { ErrorDialog } from "./components/ErrorDialog.tsx";
+import { CustomerInput } from "./components/form/CustomerInput.tsx";
+import { DropZone } from "./components/form/DropZone.tsx";
+import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
+import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
+import { SettingsModal } from "./components/SettingsModal.tsx";
+import { createPayload } from "./obx.ts";
+import type { Address, LineItem, Quotation } from "./types.ts";
 
 export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
@@ -24,27 +23,40 @@ export default function App() {
   const [multiplier, setMultiplier] = useState(1);
   const [grouping, setGrouping] = useState(true);
   const [description, setDescription] = useState(true);
-  const [xmlDoc, setXmlDoc] = useState<Document | undefined>();
+  const [xmlDocs, setXmlDocs] = useState<Record<string, Document>>({});
   const [customer, setCustomer] = useState<Address | undefined>();
   const [payload, setPayload] = useState<Quotation | undefined>();
   const [error, setError] = useState<string>("");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
     void getVersion().then(setVersion);
   }, []);
 
   useEffect(() => {
-    if (xmlDoc) {
+    if (Object.keys(xmlDocs).length === 1) {
       setPayload(
-        createPayload(xmlDoc, multiplier, description, grouping, customer),
+        createPayload(
+          Object.values(xmlDocs)[0],
+          multiplier,
+          description,
+          grouping,
+          customer,
+        ),
       );
+    } else if (Object.keys(xmlDocs).length > 1) {
+      setPayload(
+        createPayload(xmlDocs, multiplier, description, grouping, customer),
+      );
+    } else {
+      setPayload(undefined);
     }
-  }, [xmlDoc, multiplier, grouping, description, customer]);
+  }, [xmlDocs, multiplier, grouping, description, customer]);
 
   const handleItemDeleted = (index: number) => {
     if (payload) {
       const newPayload = { ...payload };
-      newPayload.lineItems.splice(index, 1);
+      newPayload.lineItems = newPayload.lineItems.filter((_, i) => i !== index);
       setPayload(newPayload);
     }
   };
@@ -57,10 +69,21 @@ export default function App() {
     }
   };
 
-  async function handleFileSelect(content: Promise<string> | string) {
+  async function handleFileSelect(
+    content: Promise<string> | string,
+    filename: string,
+  ) {
     const parser = new DOMParser();
     const parsed = parser.parseFromString(await content, "application/xml");
-    setXmlDoc(parsed);
+    setXmlDocs((prev) => ({ ...prev, [filename]: parsed }));
+  }
+
+  function handleFileRemove(filename: string) {
+    setXmlDocs((prev) => {
+      const next = { ...prev };
+      delete next[filename];
+      return next;
+    });
   }
 
   function submit(e: FormEvent<HTMLFormElement>) {
@@ -74,7 +97,7 @@ export default function App() {
           location.reload();
         })
         .catch((err) => {
-          setError(`${err}`);
+          setError(err instanceof Error ? err.message : String(err));
         });
     } else {
       setError("Keine Daten zum Importieren vorhanden!");
@@ -83,43 +106,62 @@ export default function App() {
 
   return (
     <>
-      <h1 className="text-3xl font-medium my-4">
-        Lexware OBX Importer
-        <small className="text-xs font-light text-gray-400 px-2">
-          {version}
-        </small>
-      </h1>
+      <div className="my-4 flex items-center justify-between">
+        <h1 className="font-medium text-3xl">
+          Lexware OBX Importer
+          <small className="px-2 font-light text-gray-400 text-xs">
+            {version}
+          </small>
+        </h1>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen(true)}
+          className="text-gray-400 transition-colors hover:text-gray-600"
+          aria-label="Einstellungen öffnen"
+        >
+          <Cog />
+        </button>
+      </div>
 
-      <form onSubmit={submit} className="space-y-2 max-w-full w-full">
-        <DropZone onFileSelect={(c) => void handleFileSelect(c)} />
-        <ApiKeyInput onChange={setApiKey} />
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onApiKeyChange={setApiKey}
+        onGroupingChange={setGrouping}
+        onDescriptionChange={setDescription}
+      />
+
+      <form onSubmit={submit} className="w-full max-w-full space-y-2">
+        <DropZone
+          loadedFiles={Object.keys(xmlDocs)}
+          onFileSelect={(c, filename) => void handleFileSelect(c, filename)}
+          onFileRemove={handleFileRemove}
+        />
         <MultiplierInput onChange={setMultiplier} />
         <CustomerInput onChange={setCustomer} />
-        <GroupingToggle onChange={setGrouping} />
-        <DescriptionToggle onChange={setDescription} />
-        <div className="flex justify-end mt-4 space-x-4">
+        <div className="mt-4 flex justify-end space-x-4">
           <input
             type="reset"
             value="Zurücksetzen"
-            className="bg-white text-sm py-1.5 px-3 rounded-md shadow font-semibold hover:bg-gray-200 transition-all"
+            className="rounded-md bg-white px-3 py-1.5 font-semibold text-sm shadow transition-all hover:bg-gray-200"
             onClick={() => location.reload()}
           />
           <input
             id="submit"
             type="submit"
             value="Importieren"
-            className="bg-blue-500 text-white text-sm py-1.5 px-3 rounded-md shadow font-semibold hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="rounded-md bg-blue-500 px-3 py-1.5 font-semibold text-sm text-white shadow transition-all hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!apiKey}
           />
         </div>
       </form>
       {payload && (
         <Disclosure as="div" className="max-w-full">
-          <DisclosureButton className="text-gray-300 hover:text-gray-600 text-sm">
+          <DisclosureButton className="text-gray-300 text-sm hover:text-gray-600">
             JSON Vorschau anzeigen
           </DisclosureButton>
           <DisclosurePanel>
-            <pre className="text-xs overflow-auto max-h-64 bg-white rounded border border-gray-300 p-4 ">
+            <pre className="max-h-64 overflow-auto rounded border border-gray-300 bg-white p-4 text-xs">
               {JSON.stringify(payload, null, 2)}
             </pre>
           </DisclosurePanel>
@@ -131,7 +173,7 @@ export default function App() {
         onItemChanged={handleItemChanged}
       />
 
-      <Error message={error} payload={payload} setMessage={setError} />
+      <ErrorDialog message={error} payload={payload} setMessage={setError} />
     </>
   );
 }

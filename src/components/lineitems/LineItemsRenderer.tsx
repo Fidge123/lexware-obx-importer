@@ -1,4 +1,4 @@
-import React from "react";
+import type React from "react";
 import type { LineItem, Quotation } from "../../types.ts";
 import { LineItemComponent } from "./LineItemComponent.tsx";
 
@@ -18,12 +18,12 @@ export const LineItemsRenderer: React.FC<LineItemsRendererProps> = ({
   }
 
   return (
-    <div className="mt-4 bg-white border border-gray-300 overflow-hidden rounded-lg shadow">
-      <h2 className="px-4 py-2 bg-gray-100 border-gray-300">Positionen</h2>
-      <div className="divide-gray-300 divide-y">
+    <div className="mt-4 overflow-hidden rounded-lg border border-gray-300 bg-white shadow">
+      <h2 className="border-gray-300 bg-gray-100 px-4 py-2">Positionen</h2>
+      <div className="divide-y divide-gray-300">
         {payload.lineItems.map((item, index) => (
           <LineItemComponent
-            key={index}
+            key={`${item.name}-${index}`}
             item={item}
             index={index}
             onItemChanged={onItemChanged}

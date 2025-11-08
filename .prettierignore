@@ -1,7 +1,0 @@
-# Dependencies
-dist/
-build/
-
-# Tauri
-src-tauri/target/
-src-tauri/gen/

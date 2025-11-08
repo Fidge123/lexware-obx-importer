@@ -1,21 +1,17 @@
-import { useEffect, useState } from "react";
-import { getContacts } from "../../api";
-import { Address } from "../../types";
 import {
   Combobox,
   ComboboxInput,
   ComboboxOption,
   ComboboxOptions,
 } from "@headlessui/react";
+import { useCallback, useEffect, useState } from "react";
+import { getContacts } from "../../api";
+import type { Address } from "../../types";
 
 export function CustomerInput({ onChange }: Props) {
   const [customers, setCustomers] = useState<Address[]>([]);
 
-  useEffect(() => {
-    void fetchCustomers("");
-  }, []);
-
-  async function fetchCustomers(filter: string): Promise<void> {
+  const fetchCustomers = useCallback(async (filter: string): Promise<void> => {
     if (filter.length < 3) {
       setCustomers([]);
     } else {
@@ -23,12 +19,20 @@ export function CustomerInput({ onChange }: Props) {
         await getContacts(localStorage.getItem("apiKey") ?? "", filter),
       );
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void fetchCustomers("");
+  }, [fetchCustomers]);
+
+  const handleComboboxChange = (value: Address | null | undefined) => {
+    onChange(value ?? undefined);
+  };
 
   return (
-    <label className="flex items-center justify-between text-sm">
-      Kunde
-      <Combobox onChange={onChange}>
+    <div className="flex items-center justify-between text-sm">
+      <span>Kunde</span>
+      <Combobox onChange={handleComboboxChange}>
         <ComboboxInput
           placeholder="Testkunde"
           displayValue={(customer: Address) =>
@@ -37,20 +41,20 @@ export function CustomerInput({ onChange }: Props) {
               : ""
           }
           onChange={(ev) => void fetchCustomers(ev.target.value)}
-          className="w-sm py-1.5 px-3 rounded-md border border-gray-300 bg-white shadow focus:border-blue-500"
+          className="w-sm rounded-md border border-gray-300 bg-white px-3 py-1.5 shadow focus:border-blue-500"
         />
         <ComboboxOptions
           anchor="bottom"
-          className="rounded shadow border border-gray-300 empty:invisible"
+          className="rounded border border-gray-300 shadow empty:invisible"
         >
           {customers.map((customer, i) => (
             <ComboboxOption
               key={customer.contactId ?? i}
               value={customer}
-              className="data-focus:bg-blue-200 px-3 py-1 bg-white text-md flex justify-between items-center w-md"
+              className="flex w-md items-center justify-between bg-white px-3 py-1 text-md data-focus:bg-blue-200"
             >
               <span className="max-w-sm">{customer.name}</span>
-              <small className="text-xs text-gray-400 text-right pl-2 flex flex-col">
+              <small className="flex flex-col pl-2 text-right text-gray-400 text-xs">
                 <span className="break-after-avoid">
                   {customer.street?.replace(/Stra[ßs]s?e/, "Str.")}
                 </span>
@@ -60,7 +64,7 @@ export function CustomerInput({ onChange }: Props) {
           ))}
         </ComboboxOptions>
       </Combobox>
-    </label>
+    </div>
   );
 }
 

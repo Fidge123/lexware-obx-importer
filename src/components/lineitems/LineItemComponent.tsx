@@ -4,8 +4,8 @@ import {
   DisclosurePanel,
 } from "@headlessui/react";
 import type {
-  LineItem,
   CustomLineItem,
+  LineItem,
   SubLineItem,
   TextLineItem,
 } from "../../types.ts";
@@ -44,16 +44,16 @@ export function LineItemComponent({
 
   return (
     <div
-      className={`py-4 px-4 space-y-3 ${isTextItem(item) ? "bg-gray-100" : ""}`}
+      className={`space-y-3 px-4 py-4 ${isTextItem(item) ? "bg-gray-100" : ""}`}
       data-index={index.toString()}
     >
-      <div className="flex justify-between flex-col">
+      <div className="flex flex-col justify-between">
         <h3>{item.name}</h3>
         {item.description && (
           <Disclosure>
             <DisclosureButton
               as="span"
-              className="text-left line-clamp-1 w-fit max-w-2xl text-gray-500 text-sm mt-1 hover:text-gray-800"
+              className="mt-1 line-clamp-1 w-fit max-w-2xl text-left text-gray-500 text-sm hover:text-gray-800"
             >
               {item.description}
             </DisclosureButton>
@@ -65,7 +65,7 @@ export function LineItemComponent({
       </div>
 
       {hasEditableControls(item) && (
-        <div className="flex gap-8 items-center">
+        <div className="flex items-center gap-8">
           <InputField
             label="Anzahl"
             type="number"

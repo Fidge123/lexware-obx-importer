@@ -24,5 +24,8 @@ dist-ssr
 *.sw?
 
 examples/
-.envrc
+.env*
 latest.json
+
+ics/
+foo/

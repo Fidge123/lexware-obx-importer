@@ -1,20 +1,21 @@
 import type {
+  Address,
+  CustomLineItem,
   LineItem,
   Quotation,
-  TextLineItem,
-  CustomLineItem,
   SubLineItem,
-  Address,
+  TextLineItem,
 } from "./types";
 
 let evaluator: XPathEvaluator;
-let mult: number;
+let multiplier: number;
 
 function iterate(xpathResult: XPathResult): Node[] {
   const array: Node[] = [];
-  let node: Node | null;
-  while ((node = xpathResult.iterateNext())) {
+  let node = xpathResult.iterateNext();
+  while (node) {
     array.push(node);
+    node = xpathResult.iterateNext();
   }
   return array;
 }
@@ -91,7 +92,7 @@ function createSubItems(
     ).map((item) =>
       item.unitPrice?.netAmount
         ? `${item.quantity}x ${item.name} | je ${(
-            item.unitPrice.netAmount * mult
+            item.unitPrice.netAmount * multiplier
           ).toFixed(2)} EUR${
             includeDescription ? `\n${item.description}\n` : ""
           }`
@@ -137,7 +138,8 @@ function createLineItem(
     " | " +
     getString("./description[@type='short']/text[@lang='de']", context);
   const price =
-    getNumber("./itemPrice[@type='sale'][@pd='1']/@value", context) * mult;
+    getNumber("./itemPrice[@type='sale'][@pd='1']/@value", context) *
+    multiplier;
   const currency =
     getString("./itemPrice[@type='sale'][@pd='1']/@currency", context) ?? "EUR";
   const subItems = createSubItems(
@@ -169,7 +171,8 @@ function createLineItem(
               `.//bskArticle/itemPrice[@type='sale'][@pd='1']/@value`,
               context,
             ).reduce(
-              (sum, curr) => sum + parseFloat(curr?.textContent ?? "0") * mult,
+              (sum, curr) =>
+                sum + parseFloat(curr?.textContent ?? "0") * multiplier,
               0,
             ),
         ),
@@ -189,7 +192,7 @@ function aggregateDuplicates<T extends CustomLineItem | SubLineItem>(
         item.name === curr.name &&
         item.unitPrice?.netAmount === curr.unitPrice?.netAmount,
     );
-    if (item && item.quantity) {
+    if (item?.quantity) {
       item.quantity += 1;
     } else {
       items.push(curr);
@@ -213,7 +216,7 @@ function aggregateDuplicateLists(
             item[0].name === curr[0].name &&
             item[0].unitPrice?.netAmount === curr[0].unitPrice?.netAmount,
         );
-        if (item && item[0].quantity) {
+        if (item?.[0].quantity) {
           if (item.length < 2 || item[1].description === curr[1].description) {
             item[0].quantity += 1;
           }
@@ -227,28 +230,7 @@ function aggregateDuplicateLists(
     .flat();
 }
 
-function getShippingCosts(parsed: Document): LineItem {
-  const volumes = getPrefix(parsed).flatMap(([, root]) =>
-    get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='volume']/@value", context) ??
-          get(".//feature[@name='VOLUMEN']/@value", context) ??
-          get(".//feature[@name='Volumen']/@value", context),
-      )
-      .map((v) => parseFloat((v as Attr).value || "0")),
-  );
-
-  const weights = getPrefix(parsed).flatMap(([, root]) =>
-    get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='netWeight']/@originalValue", context) ??
-          get(".//feature[@name='GEWICHT']/@value", context) ??
-          get(".//feature[@name='Gewicht']/@value", context),
-      )
-      .map((v) => parseFloat((v as Attr).value || "0")),
-  );
+function getShippingCosts(volumes: number[], weights: number[]): LineItem {
   const disclaimer = `Warenlieferungen erfolgen DDP (Delivered Duty Paid). Die Anlieferung umfasst den Transport in den Aufstellungsraum bzw. wenn dies nicht möglich ist, hinter die erste verschlossene Tür.`;
 
   return {
@@ -274,16 +256,71 @@ function getShippingCosts(parsed: Document): LineItem {
   };
 }
 
-export function createPayload(
+function getVolumes(parsed: Document) {
+  return getPrefix(parsed).flatMap(([, root]) =>
+    get("./bskArticle", root)
+      .flatMap(
+        (context) =>
+          get(".//packInfo[@key='volume']/@value", context) ??
+          get(".//feature[@name='VOLUMEN']/@value", context) ??
+          get(".//feature[@name='Volumen']/@value", context),
+      )
+      .map((v) => parseFloat((v as Attr).value || "0")),
+  );
+}
+
+function getWeights(parsed: Document) {
+  return getPrefix(parsed).flatMap(([, root]) =>
+    get("./bskArticle", root)
+      .flatMap(
+        (context) =>
+          get(".//packInfo[@key='netWeight']/@originalValue", context) ??
+          get(".//feature[@name='GEWICHT']/@value", context) ??
+          get(".//feature[@name='Gewicht']/@value", context),
+      )
+      .map((v) => parseFloat((v as Attr).value || "0")),
+  );
+}
+
+function processDocument(
   parsed: Document,
-  multVal: number,
+  includeDescription: boolean,
+  groupLineItems: boolean,
+): LineItem[] {
+  return aggregateDuplicateLists(
+    getPrefix(parsed).flatMap(([prefix, root]) =>
+      get("./bskArticle", root).map((context) =>
+        createLineItem(context, prefix, includeDescription),
+      ),
+    ),
+    groupLineItems,
+  );
+}
+
+function calculateRoomTotal(lineItems: LineItem[]): number {
+  return lineItems.reduce((total, item) => {
+    if (
+      "type" in item &&
+      item.type === "custom" &&
+      "unitPrice" in item &&
+      item.unitPrice
+    ) {
+      return total + item.unitPrice.netAmount * item.quantity;
+    }
+    return total;
+  }, 0);
+}
+
+export function createPayload(
+  parsed: Document | Record<string, Document>,
+  multiplierValue: number,
   includeDescription: boolean,
   groupLineItems: boolean,
   address: Address = { name: "Testkunde", countryCode: "DE" },
   xpath: XPathEvaluator = new XPathEvaluator(),
 ): Quotation {
   evaluator = xpath;
-  mult = isNaN(multVal) ? 1 : multVal;
+  multiplier = Number.isNaN(multiplierValue) ? 1 : multiplierValue;
 
   const now = new Date();
   const expiration = new Date(
@@ -292,21 +329,66 @@ export function createPayload(
     now.getDate() + 14,
   );
 
+  let allLineItems: LineItem[] = [];
+
+  if (typeof parsed === "object" && "documentElement" in parsed) {
+    const document = parsed as Document;
+    allLineItems = [
+      ...processDocument(document, includeDescription, groupLineItems),
+      getShippingCosts(getVolumes(document), getWeights(document)),
+    ];
+  } else {
+    const multipleDocuments = parsed;
+    const roomEntries = Object.entries(multipleDocuments);
+    const allDocuments: Document[] = [];
+
+    for (const [roomName, document] of roomEntries) {
+      allLineItems.push({
+        type: "text",
+        name: `Es folgen die Artikel für ${roomName.replace(".obx", "")}`,
+      });
+
+      const roomLineItems = processDocument(
+        document,
+        includeDescription,
+        groupLineItems,
+      );
+      allLineItems.push(...roomLineItems);
+
+      const roomTotal = calculateRoomTotal(roomLineItems);
+
+      allLineItems.push({
+        type: "text",
+        name: `Nettosumme ${roomName.replace(".obx", "")}: ${roomTotal.toLocaleString(
+          "de-DE",
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          },
+        )} EUR`,
+      });
+
+      allDocuments.push(document);
+    }
+
+    const mergedShippingCosts = getShippingCosts(
+      allDocuments.reduce((volumes, doc) => {
+        volumes.push(...getVolumes(doc));
+        return volumes;
+      }, [] as number[]),
+      allDocuments.reduce((weights, doc) => {
+        weights.push(...getWeights(doc));
+        return weights;
+      }, [] as number[]),
+    );
+    allLineItems.push(mergedShippingCosts);
+  }
+
   return {
     voucherDate: now.toISOString(),
     expirationDate: expiration.toISOString(),
     address: address ?? { name: "Testkunde", countryCode: "DE" },
-    lineItems: [
-      ...aggregateDuplicateLists(
-        getPrefix(parsed).flatMap(([prefix, root]) =>
-          get("./bskArticle", root).map((context) =>
-            createLineItem(context, prefix, includeDescription),
-          ),
-        ),
-        groupLineItems,
-      ),
-      getShippingCosts(parsed),
-    ],
+    lineItems: allLineItems,
     totalPrice: { currency: "EUR" },
     taxConditions: { taxType: "net" },
   };

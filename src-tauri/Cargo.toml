@@ -1,6 +1,6 @@
 [package]
 name = "lexware-obx-importer"
-version = "0.1.0"
+version = "0.1.9"
 description = "Import all products from an OBX as an offer to lexware"
 authors = ["Florian Richter"]
 edition = "2021"

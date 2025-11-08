@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 
-import { readFile, writeFile } from "fs/promises";
-import { exec } from "child_process";
-import { promisify } from "util";
-import { basename } from "path";
+import { exec } from "node:child_process";
+import { readFile, writeFile } from "node:fs/promises";
+import { basename } from "node:path";
+import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
@@ -125,7 +125,7 @@ async function main() {
 async function uploadAsset(releaseId: number, filePath: string) {
   try {
     const fileName = basename(filePath);
-    const fileContent = await readFile(filePath);
+    const fileContent = await readFile(filePath, { encoding: "utf-8" });
 
     let contentType = "application/octet-stream";
 

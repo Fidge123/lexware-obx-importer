@@ -2,7 +2,7 @@ export function DeleteButton({ index, onDelete }: Props) {
   return (
     <button
       type="button"
-      className="bg-red-500 text-white rounded h-7 w-7 text-sm cursor-pointer hover:bg-red-600 transition-colors"
+      className="h-7 w-7 cursor-pointer rounded bg-red-500 text-sm text-white transition-colors hover:bg-red-600"
       title="Position löschen"
       onClick={() => onDelete(index)}
     >
