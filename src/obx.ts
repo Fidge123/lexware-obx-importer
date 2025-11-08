@@ -359,10 +359,13 @@ export function createPayload(
 
       allLineItems.push({
         type: "text",
-        name: `Nettosumme ${roomName.replace(".obx", "")}: ${roomTotal.toLocaleString("de-DE", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })} EUR`,
+        name: `Nettosumme ${roomName.replace(".obx", "")}: ${roomTotal.toLocaleString(
+          "de-DE",
+          {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          },
+        )} EUR`,
       });
 
       allDocuments.push(document);
