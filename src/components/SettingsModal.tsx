@@ -87,7 +87,10 @@ export function SettingsModal({
           <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
             <ApiKeyInput onChange={onApiKeyChange} />
             <GroupingToggle value={grouping} onChange={onGroupingChange} />
-            <DescriptionToggle value={description} onChange={onDescriptionChange} />
+            <DescriptionToggle
+              value={description}
+              onChange={onDescriptionChange}
+            />
 
             <label
               htmlFor="xlsxFile"
