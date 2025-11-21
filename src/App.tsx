@@ -22,8 +22,12 @@ export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
   const [version, setVersion] = useState("");
   const [multiplier, setMultiplier] = useState(1);
-  const [grouping, setGrouping] = useState(true);
-  const [description, setDescription] = useState(true);
+  const [grouping, setGrouping] = useState(
+    localStorage.getItem("grouping") !== "false",
+  );
+  const [description, setDescription] = useState(
+    localStorage.getItem("description") !== "false",
+  );
   const [xmlDocs, setXmlDocs] = useState<Record<string, Document>>({});
   const [customer, setCustomer] = useState<Address | undefined>();
   const [payload, setPayload] = useState<Quotation | undefined>();
@@ -52,6 +56,14 @@ export default function App() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem("grouping", String(grouping));
+  }, [grouping]);
+
+  useEffect(() => {
+    localStorage.setItem("description", String(description));
+  }, [description]);
 
   const calculateNonDiscountedStats = useCallback((quotation: Quotation) => {
     let count = 0;
@@ -193,7 +205,9 @@ export default function App() {
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         onApiKeyChange={setApiKey}
+        grouping={grouping}
         onGroupingChange={setGrouping}
+        description={description}
         onDescriptionChange={setDescription}
         onNonDiscountedListChange={setNonDiscountedArtNrs}
       />
