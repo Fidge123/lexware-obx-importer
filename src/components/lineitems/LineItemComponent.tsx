@@ -42,13 +42,32 @@ export function LineItemComponent({
     }
   };
 
+  // Check if item is non-discounted or has non-discounted sub-items
+  const isCustomItem = (item: LineItem): item is CustomLineItem => {
+    return "type" in item && item.type === "custom";
+  };
+
+  const showNettoLabel = isCustomItem(item) && item.isNonDiscounted;
+  const showPartialNettoLabel =
+    isCustomItem(item) && item.hasNonDiscountedSubItems;
+
   return (
     <div
       className={`space-y-3 px-4 py-4 ${isTextItem(item) ? "bg-gray-100" : ""}`}
       data-index={index.toString()}
     >
       <div className="flex flex-col justify-between">
-        <h3>{item.name}</h3>
+        <h3 className="flex items-center gap-2">
+          {item.name}
+          {showNettoLabel && (
+            <span className="font-semibold text-red-600 text-sm">NETTO</span>
+          )}
+          {showPartialNettoLabel && (
+            <span className="font-semibold text-orange-600 text-sm">
+              Teilweise NETTO
+            </span>
+          )}
+        </h3>
         {item.description && (
           <Disclosure>
             <DisclosureButton

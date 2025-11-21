@@ -5,7 +5,7 @@ import {
 } from "@headlessui/react";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { createQuotation } from "./api.ts";
 import { Cog } from "./components/Cog.tsx";
 import { ErrorDialog } from "./components/ErrorDialog.tsx";
@@ -13,9 +13,10 @@ import { CustomerInput } from "./components/form/CustomerInput.tsx";
 import { DropZone } from "./components/form/DropZone.tsx";
 import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
+import { NonDiscountedWarningDialog } from "./components/NonDiscountedWarningDialog.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
 import { createPayload } from "./obx.ts";
-import type { Address, LineItem, Quotation } from "./types.ts";
+import type { Address, CustomLineItem, LineItem, Quotation } from "./types.ts";
 
 export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
@@ -28,30 +29,95 @@ export default function App() {
   const [payload, setPayload] = useState<Quotation | undefined>();
   const [error, setError] = useState<string>("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [nonDiscountedArtNrs, setNonDiscountedArtNrs] = useState<Set<string>>(
+    new Set(),
+  );
+  const [warningDialogOpen, setWarningDialogOpen] = useState(false);
+  const [nonDiscountedStats, setNonDiscountedStats] = useState({
+    count: 0,
+    totalValue: 0,
+  });
 
   useEffect(() => {
     void getVersion().then(setVersion);
+
+    // Load non-discounted article numbers from localStorage
+    const stored = localStorage.getItem("nonDiscountedArtNrs");
+    if (stored) {
+      try {
+        const artNrs = JSON.parse(stored) as string[];
+        setNonDiscountedArtNrs(new Set(artNrs));
+      } catch (error) {
+        console.error("Error loading non-discounted article numbers:", error);
+      }
+    }
+  }, []);
+
+  const calculateNonDiscountedStats = useCallback((quotation: Quotation) => {
+    let count = 0;
+    let totalValue = 0;
+
+    for (const item of quotation.lineItems) {
+      if (
+        "isNonDiscounted" in item &&
+        (item as CustomLineItem).isNonDiscounted
+      ) {
+        count++;
+        const customItem = item as CustomLineItem;
+        totalValue += customItem.unitPrice.netAmount * customItem.quantity;
+      }
+    }
+
+    setNonDiscountedStats({ count, totalValue });
+
+    // Show warning dialog if there are non-discounted items
+    if (count > 0) {
+      setWarningDialogOpen(true);
+    }
   }, []);
 
   useEffect(() => {
     if (Object.keys(xmlDocs).length === 1) {
-      setPayload(
-        createPayload(
-          Object.values(xmlDocs)[0],
-          multiplier,
-          description,
-          grouping,
-          customer,
-        ),
+      const newPayload = createPayload(
+        Object.values(xmlDocs)[0],
+        multiplier,
+        description,
+        grouping,
+        customer,
+        undefined,
+        nonDiscountedArtNrs,
       );
+      setPayload(newPayload);
+
+      // Calculate non-discounted stats
+      calculateNonDiscountedStats(newPayload);
     } else if (Object.keys(xmlDocs).length > 1) {
-      setPayload(
-        createPayload(xmlDocs, multiplier, description, grouping, customer),
+      const newPayload = createPayload(
+        xmlDocs,
+        multiplier,
+        description,
+        grouping,
+        customer,
+        undefined,
+        nonDiscountedArtNrs,
       );
+      setPayload(newPayload);
+
+      // Calculate non-discounted stats
+      calculateNonDiscountedStats(newPayload);
     } else {
       setPayload(undefined);
+      setNonDiscountedStats({ count: 0, totalValue: 0 });
     }
-  }, [xmlDocs, multiplier, grouping, description, customer]);
+  }, [
+    xmlDocs,
+    multiplier,
+    grouping,
+    description,
+    customer,
+    nonDiscountedArtNrs,
+    calculateNonDiscountedStats,
+  ]);
 
   const handleItemDeleted = (index: number) => {
     if (payload) {
@@ -129,6 +195,14 @@ export default function App() {
         onApiKeyChange={setApiKey}
         onGroupingChange={setGrouping}
         onDescriptionChange={setDescription}
+        onNonDiscountedListChange={setNonDiscountedArtNrs}
+      />
+
+      <NonDiscountedWarningDialog
+        isOpen={warningDialogOpen}
+        onClose={() => setWarningDialogOpen(false)}
+        count={nonDiscountedStats.count}
+        totalValue={nonDiscountedStats.totalValue}
       />
 
       <form onSubmit={submit} className="w-full max-w-full space-y-2">

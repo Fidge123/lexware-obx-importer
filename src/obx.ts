@@ -9,6 +9,7 @@ import type {
 
 let evaluator: XPathEvaluator;
 let multiplier: number;
+let nonDiscountedArtNrs: Set<string>;
 
 function iterate(xpathResult: XPathResult): Node[] {
   const array: Node[] = [];
@@ -133,8 +134,9 @@ function createLineItem(
   prefix: string,
   includeDescription = true,
 ): [CustomLineItem, ...Array<TextLineItem>] {
+  const artNr = getString("./artNr[@type='final']", context) ?? "";
   const name =
-    getString("./artNr[@type='final']", context) +
+    artNr +
     " | " +
     getString("./description[@type='short']/text[@lang='de']", context);
   const price =
@@ -142,6 +144,15 @@ function createLineItem(
     multiplier;
   const currency =
     getString("./itemPrice[@type='sale'][@pd='1']/@currency", context) ?? "EUR";
+
+  // Check if main item or any sub-items are non-discounted
+  const isMainNonDiscounted = nonDiscountedArtNrs.has(artNr);
+  const subArticleNodes = get(`.//bskArticle`, context);
+  const hasNonDiscountedSubs = subArticleNodes.some((node) => {
+    const subArtNr = getString(`./artNr[@type='final']`, node);
+    return subArtNr && nonDiscountedArtNrs.has(subArtNr);
+  });
+
   const subItems = createSubItems(
     context,
     `1x ${name} | je ${price.toFixed(2)} ${currency}\n`,
@@ -178,6 +189,9 @@ function createLineItem(
         ),
         taxRatePercentage: 19,
       },
+      artNr: artNr,
+      isNonDiscounted: isMainNonDiscounted,
+      hasNonDiscountedSubItems: hasNonDiscountedSubs && !isMainNonDiscounted,
     },
     ...(includeDescription ? subItems : []),
   ];
@@ -318,9 +332,11 @@ export function createPayload(
   groupLineItems: boolean,
   address: Address = { name: "Testkunde", countryCode: "DE" },
   xpath: XPathEvaluator = new XPathEvaluator(),
+  nonDiscountedSet: Set<string> = new Set(),
 ): Quotation {
   evaluator = xpath;
   multiplier = Number.isNaN(multiplierValue) ? 1 : multiplierValue;
+  nonDiscountedArtNrs = nonDiscountedSet;
 
   const now = new Date();
   const expiration = new Date(

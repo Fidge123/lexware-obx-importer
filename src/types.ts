@@ -24,6 +24,9 @@ export interface CustomLineItem {
     netAmount: number;
     taxRatePercentage: number;
   };
+  artNr?: string;
+  isNonDiscounted?: boolean;
+  hasNonDiscountedSubItems?: boolean;
 }
 
 export type LineItemWithType = TextLineItem | CustomLineItem;
