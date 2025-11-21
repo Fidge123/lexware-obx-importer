@@ -14,7 +14,9 @@ export function SettingsModal({
   isOpen,
   onClose,
   onApiKeyChange,
+  grouping,
   onGroupingChange,
+  description,
   onDescriptionChange,
   onNonDiscountedListChange,
 }: Props) {
@@ -84,8 +86,8 @@ export function SettingsModal({
 
           <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
             <ApiKeyInput onChange={onApiKeyChange} />
-            <GroupingToggle onChange={onGroupingChange} />
-            <DescriptionToggle onChange={onDescriptionChange} />
+            <GroupingToggle value={grouping} onChange={onGroupingChange} />
+            <DescriptionToggle value={description} onChange={onDescriptionChange} />
 
             <label
               htmlFor="xlsxFile"
@@ -128,7 +130,9 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onApiKeyChange: (key: string) => void;
+  grouping: boolean;
   onGroupingChange: (value: boolean) => void;
+  description: boolean;
   onDescriptionChange: (value: boolean) => void;
   onNonDiscountedListChange: (artNrs: Set<string>) => void;
 }

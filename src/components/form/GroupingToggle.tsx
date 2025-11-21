@@ -1,8 +1,9 @@
-export function GroupingToggle({ onChange }: Props) {
+export function GroupingToggle({ value, onChange }: Props) {
   return (
     <label className="contents text-balance text-sm">
       Darstellung gleicher Produkte
       <select
+        value={value ? "y" : "n"}
         onChange={(e) => onChange(e.currentTarget.value === "y")}
         className="w-full appearance-none rounded-md border border-gray-300 bg-white px-3 py-1.5 shadow focus:border-blue-500"
       >
@@ -14,5 +15,6 @@ export function GroupingToggle({ onChange }: Props) {
 }
 
 interface Props {
+  value: boolean;
   onChange: (value: boolean) => void;
 }
