@@ -5,7 +5,7 @@ import {
   DialogTitle,
 } from "@headlessui/react";
 import { useState } from "react";
-import * as XLSX from "xlsx";
+import { extractNonDiscountedArtNrs } from "../utils/xlsxParser.ts";
 import { ApiKeyInput } from "./form/ApiKeyInput.tsx";
 import { DescriptionToggle } from "./form/DescriptionToggle.tsx";
 import { GroupingToggle } from "./form/GroupingToggle.tsx";
@@ -32,29 +32,7 @@ export function SettingsModal({
 
     try {
       const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<{
-        __EMPTY?: string;
-        __EMPTY_2?: string;
-      }>(firstSheet, { header: 1 });
-
-      // Extract artNr from column A where column C contains "Netto" (case-insensitive)
-      const nonDiscountedArtNrs: string[] = [];
-      for (const row of data as unknown[][]) {
-        const artNr = row[0]; // Column A (index 0)
-        const columnC = row[2]; // Column C (index 2)
-
-        if (
-          artNr &&
-          typeof artNr === "string" &&
-          columnC &&
-          typeof columnC === "string" &&
-          columnC.toLowerCase().includes("netto")
-        ) {
-          nonDiscountedArtNrs.push(artNr.trim());
-        }
-      }
+      const nonDiscountedArtNrs = extractNonDiscountedArtNrs(buffer);
 
       // Store in localStorage
       localStorage.setItem(

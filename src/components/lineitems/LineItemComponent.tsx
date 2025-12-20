@@ -30,15 +30,24 @@ export function LineItemComponent({
 }: Props) {
   const handleQuantityChange = (value: string) => {
     if (hasEditableControls(item)) {
-      item.quantity = parseFloat(value) || 0;
-      onItemChanged(index, item);
+      const updatedItem = {
+        ...item,
+        quantity: parseFloat(value) || 0,
+      };
+      onItemChanged(index, updatedItem);
     }
   };
 
   const handleNetAmountChange = (value: string) => {
     if (hasEditableControls(item)) {
-      item.unitPrice.netAmount = parseFloat(value) || 0;
-      onItemChanged(index, item);
+      const updatedItem = {
+        ...item,
+        unitPrice: {
+          ...item.unitPrice,
+          netAmount: parseFloat(value) || 0,
+        },
+      };
+      onItemChanged(index, updatedItem);
     }
   };
 

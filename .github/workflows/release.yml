@@ -19,16 +19,34 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check if release already exists
+        id: check
+        run: |
+          VERSION=$(cat src-tauri/tauri.conf.json | grep '"version"' | head -1 | sed 's/.*: "\(.*\)".*/\1/')
+          if git rev-parse "app-v$VERSION" >/dev/null 2>&1; then
+            echo "Tag app-v$VERSION already exists, skipping release"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "Tag app-v$VERSION does not exist, proceeding with release"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
 
       - uses: oven-sh/setup-bun@v2
+        if: steps.check.outputs.skip != 'true'
 
       - name: Install Rust stable
+        if: steps.check.outputs.skip != 'true'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install frontend dependencies
+        if: steps.check.outputs.skip != 'true'
         run: bun install
 
       - uses: tauri-apps/tauri-action@v0
+        if: steps.check.outputs.skip != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

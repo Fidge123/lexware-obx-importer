@@ -49,6 +49,7 @@ export function DropZone({
       <>
         <button
           type="button"
+          data-testid="add-file-button"
           className={`w-full cursor-pointer rounded-xl border-2 border-gray-300 border-dashed bg-white p-8 text-center text-gray-500 transition-colors hover:border-blue-500 hover:bg-blue-50 ${
             isDragOver ? "border-blue-500 bg-blue-50" : ""
           }`}
@@ -58,6 +59,7 @@ export function DropZone({
         </button>
         <input
           id="fileInput"
+          data-testid="file-input"
           type="file"
           accept=".obx,application/obx+xml"
           style={{ display: "none" }}

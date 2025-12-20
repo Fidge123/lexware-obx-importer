@@ -15,9 +15,14 @@ export function CustomerInput({ onChange }: Props) {
     if (filter.length < 3) {
       setCustomers([]);
     } else {
-      setCustomers(
-        await getContacts(localStorage.getItem("apiKey") ?? "", filter),
-      );
+      try {
+        setCustomers(
+          await getContacts(localStorage.getItem("apiKey") ?? "", filter),
+        );
+      } catch (error) {
+        console.error("Failed to fetch customers:", error);
+        setCustomers([]);
+      }
     }
   }, []);
 
@@ -35,6 +40,7 @@ export function CustomerInput({ onChange }: Props) {
       <Combobox onChange={handleComboboxChange}>
         <ComboboxInput
           placeholder="Testkunde"
+          data-testid="customer-search-input"
           displayValue={(customer: Address) =>
             customer
               ? `${customer?.name} (${customer?.street}, ${customer?.city})`

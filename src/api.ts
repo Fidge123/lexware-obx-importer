@@ -1,11 +1,12 @@
-import { fetch } from "@tauri-apps/plugin-http";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import type { Address, ContactsResponse, Quotation } from "./types";
 
 export async function createQuotation(
   quotation: Quotation,
   apiKey: string,
+  fetchFn = tauriFetch,
 ): Promise<string> {
-  const response = await fetch("https://api.lexware.io/v1/quotations", {
+  const response = await fetchFn("https://api.lexware.io/v1/quotations", {
     method: "POST",
     body: JSON.stringify(quotation),
     headers: {
@@ -24,6 +25,7 @@ export async function createQuotation(
 export async function getContacts(
   apiKey: string,
   filter?: string,
+  fetchFn = tauriFetch,
 ): Promise<Address[]> {
   const url = new URL("https://api.lexware.io/v1/contacts");
 
@@ -35,7 +37,7 @@ export async function getContacts(
     url.searchParams.append("name", filter);
   }
 
-  const response = await fetch(url.toString(), {
+  const response = await fetchFn(url.toString(), {
     method: "GET",
     headers: {
       Accept: "application/json",

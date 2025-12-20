@@ -31,5 +31,8 @@ jobs:
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
         run: bun run scripts/download-r2.ts "${{ github.head_ref || github.ref_name }}"
 
-      - name: Run tests
-        run: bun test
+      - name: Run OBX parser tests (Bun)
+        run: bun test src/obx.spec.ts
+
+      - name: Run unit & component tests (Vitest)
+        run: npx vitest run
