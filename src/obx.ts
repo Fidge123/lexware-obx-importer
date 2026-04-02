@@ -230,13 +230,24 @@ function aggregateDuplicateLists(
             item[0].name === curr[0].name &&
             item[0].unitPrice?.netAmount === curr[0].unitPrice?.netAmount,
         );
-        if (item?.[0].quantity) {
-          if (item.length < 2 || item[1].description === curr[1].description) {
-            item[0].quantity += 1;
-          }
+        if (!item) {
+          items.push(curr);
+          return items;
+        }
+
+        const hasMatchingDescriptions =
+          item.length < 2 ||
+          curr.length < 2 ||
+          item[1].description === curr[1].description;
+
+        if (hasMatchingDescriptions) {
+          item[0].quantity += curr[0].quantity;
         } else {
+          // Same article/price but different composition details:
+          // keep as separate line item instead of dropping it.
           items.push(curr);
         }
+
         return items;
       },
       [] as [CustomLineItem, ...Array<TextLineItem>][],

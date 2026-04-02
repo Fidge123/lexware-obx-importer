@@ -270,6 +270,26 @@ test("generate valid json for another complex obx 7 with increased prices", asyn
   }
 });
 
+test("generate valid json for another complex obx 7", async () => {
+  const parser = new DOMParser();
+  const obx = await readFile("examples/08.obx", utf8);
+  const ungrouped = await readFile("examples/08-ungrouped.json", utf8);
+  const grouped = await readFile("examples/08-grouped.json", utf8);
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
+
+  expect(
+    createPayload(parsed, 1, true, false, address, x, nonDiscountedSet)
+      .lineItems,
+  ).toEqual(JSON.parse(ungrouped).lineItems);
+  expect(
+    createPayload(parsed, 1, true, true, address, x, nonDiscountedSet)
+      .lineItems,
+  ).toEqual(JSON.parse(grouped).lineItems);
+});
+
 test("generate valid json for multi-OBX project", async () => {
   const parser = new DOMParser();
   const obx1 = await readFile("examples/01.obx", utf8);
