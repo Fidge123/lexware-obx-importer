@@ -8,51 +8,66 @@ type S3ListResponse = {
   contents?: Array<{ key?: string }>;
 };
 
+async function downloadExamplesForBranch(
+  branch: string,
+  examplesDir: string,
+): Promise<number> {
+  const config = getR2Config();
+  const s3 = createS3Client(config);
+
+  console.log(`🔍 Listing objects with prefix: ${branch}/`);
+  const response = await s3.list({ prefix: `${branch}/` });
+  const contents = response as unknown as S3ListResponse;
+
+  let downloadedCount = 0;
+
+  if (contents.contents) {
+    for (const object of contents.contents) {
+      if (!object.key) continue;
+
+      const filename = object.key.replace(`${branch}/`, "");
+      if (!filename) continue;
+
+      const filePath = join(examplesDir, filename);
+
+      try {
+        const file = s3.file(object.key);
+        const fileData = await file.arrayBuffer();
+        await Bun.write(filePath, fileData);
+        console.log(`✓ ${filename}`);
+        downloadedCount++;
+      } catch (error) {
+        console.error(`❌ Failed to download ${filename}:`, error);
+      }
+    }
+  }
+
+  return downloadedCount;
+}
+
 async function downloadExamples(branch: string): Promise<void> {
   const config = getR2Config();
   console.log(`📥 Downloading examples from R2 for branch: ${branch}`);
   console.log(`🔗 R2 Endpoint: ${config.accountId}.r2.cloudflarestorage.com`);
   console.log(`🪣 Bucket: ${config.bucketName}`);
 
-  const s3 = createS3Client(config);
   const examplesDir = join(import.meta.dir, "..", "examples");
 
   // Ensure examples directory exists
   await mkdir(examplesDir, { recursive: true });
 
   try {
-    // List all objects with the branch prefix
-    console.log(`🔍 Listing objects with prefix: ${branch}/`);
-    const response = await s3.list({ prefix: `${branch}/` });
-    const contents = response as unknown as S3ListResponse;
+    let downloadedCount = await downloadExamplesForBranch(branch, examplesDir);
 
-    let downloadedCount = 0;
-
-    if (contents.contents) {
-      for (const object of contents.contents) {
-        if (!object.key) continue;
-
-        // Extract filename from key (remove branch prefix)
-        const filename = object.key.replace(`${branch}/`, "");
-        if (!filename) continue;
-
-        const filePath = join(examplesDir, filename);
-
-        try {
-          // Download file using s3.file() method
-          const file = s3.file(object.key);
-          const fileData = await file.arrayBuffer();
-          await Bun.write(filePath, fileData);
-          console.log(`✓ ${filename}`);
-          downloadedCount++;
-        } catch (error) {
-          console.error(`❌ Failed to download ${filename}:`, error);
-        }
-      }
+    if (downloadedCount === 0 && branch !== "main") {
+      console.log(
+        `\n⚠️  No examples found for branch: ${branch}, falling back to main`,
+      );
+      downloadedCount = await downloadExamplesForBranch("main", examplesDir);
     }
 
     if (downloadedCount === 0) {
-      console.log(`\n⚠️  No examples found for branch: ${branch}`);
+      console.log(`\n⚠️  No examples found for branch: ${branch} or main`);
     } else {
       console.log(`\n✅ Downloaded ${downloadedCount} file(s)`);
     }
