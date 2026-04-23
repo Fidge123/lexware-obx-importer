@@ -346,7 +346,10 @@ export function computeShippingInputs(
     return { volumes: getVolumes(doc), weights: getWeights(doc) };
   }
   const docs = Object.values(parsed as Record<string, Document>);
-  return { volumes: docs.flatMap(getVolumes), weights: docs.flatMap(getWeights) };
+  return {
+    volumes: docs.flatMap(getVolumes),
+    weights: docs.flatMap(getWeights),
+  };
 }
 
 export function createPayload(

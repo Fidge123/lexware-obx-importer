@@ -41,6 +41,8 @@ export default function App() {
   const koettermannSessionRef = useRef<{
     token: string;
     expiresAt: number;
+    username: string;
+    password: string;
   } | null>(null);
   const [grouping, setGrouping] = useState(
     localStorage.getItem("grouping") !== "false",
@@ -108,11 +110,6 @@ export default function App() {
     }
   }, []);
 
-  // Clear cached session when credentials change so the next call re-authenticates.
-  useEffect(() => {
-    koettermannSessionRef.current = null;
-  }, [koettermannUsername, koettermannPassword]);
-
   const getShippingCost = useCallback(
     async (
       volume_m3: number,
@@ -122,9 +119,12 @@ export default function App() {
       if (!koettermannUsername || !koettermannPassword) return null;
       try {
         const now = Date.now();
+        const cached = koettermannSessionRef.current;
         if (
-          !koettermannSessionRef.current ||
-          koettermannSessionRef.current.expiresAt <= now
+          !cached ||
+          cached.expiresAt <= now ||
+          cached.username !== koettermannUsername ||
+          cached.password !== koettermannPassword
         ) {
           const token = await koettermannLogin(
             koettermannUsername,
@@ -133,6 +133,8 @@ export default function App() {
           koettermannSessionRef.current = {
             token,
             expiresAt: now + 23 * 60 * 60 * 1000,
+            username: koettermannUsername,
+            password: koettermannPassword,
           };
         }
         return await koettermannShippingPrice(
@@ -160,9 +162,7 @@ export default function App() {
 
     async function recalculate() {
       const parsedArg =
-        Object.keys(xmlDocs).length === 1
-          ? Object.values(xmlDocs)[0]
-          : xmlDocs;
+        Object.keys(xmlDocs).length === 1 ? Object.values(xmlDocs)[0] : xmlDocs;
 
       const { volumes } = computeShippingInputs(parsedArg);
       const totalVolume = volumes.filter(Boolean).reduce((s, v) => s + v, 0);
