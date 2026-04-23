@@ -19,6 +19,10 @@ export function SettingsModal({
   description,
   onDescriptionChange,
   onNonDiscountedListChange,
+  koettermannUsername,
+  onKoettermannUsernameChange,
+  koettermannPassword,
+  onKoettermannPasswordChange,
 }: Props) {
   const [xlsxFileName, setXlsxFileName] = useState<string | null>(
     localStorage.getItem("nonDiscountedFileName"),
@@ -86,6 +90,37 @@ export function SettingsModal({
 
           <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
             <ApiKeyInput onChange={onApiKeyChange} />
+
+            <label
+              htmlFor="koettermannUsername"
+              className="font-medium text-gray-700 text-sm"
+            >
+              Koettermann E-Mail:
+            </label>
+            <input
+              id="koettermannUsername"
+              type="email"
+              value={koettermannUsername}
+              onChange={(e) => onKoettermannUsernameChange(e.target.value)}
+              placeholder="benutzer@beispiel.de"
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            />
+
+            <label
+              htmlFor="koettermannPassword"
+              className="font-medium text-gray-700 text-sm"
+            >
+              Koettermann Passwort:
+            </label>
+            <input
+              id="koettermannPassword"
+              type="password"
+              value={koettermannPassword}
+              onChange={(e) => onKoettermannPasswordChange(e.target.value)}
+              placeholder="••••••••"
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            />
+
             <GroupingToggle value={grouping} onChange={onGroupingChange} />
             <DescriptionToggle
               value={description}
@@ -138,4 +173,8 @@ interface Props {
   description: boolean;
   onDescriptionChange: (value: boolean) => void;
   onNonDiscountedListChange: (artNrs: Set<string>) => void;
+  koettermannUsername: string;
+  onKoettermannUsernameChange: (value: string) => void;
+  koettermannPassword: string;
+  onKoettermannPasswordChange: (value: string) => void;
 }

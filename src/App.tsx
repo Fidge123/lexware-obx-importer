@@ -5,8 +5,18 @@ import {
 } from "@headlessui/react";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
-import { createQuotation } from "./api.ts";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  createQuotation,
+  koettermannLogin,
+  koettermannShippingPrice,
+} from "./api.ts";
 import { Cog } from "./components/Cog.tsx";
 import { ErrorDialog } from "./components/ErrorDialog.tsx";
 import { CustomerInput } from "./components/form/CustomerInput.tsx";
@@ -15,13 +25,23 @@ import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
 import { NonDiscountedWarningDialog } from "./components/NonDiscountedWarningDialog.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
-import { createPayload } from "./obx.ts";
+import { computeShippingInputs, createPayload } from "./obx.ts";
 import type { Address, CustomLineItem, LineItem, Quotation } from "./types.ts";
 
 export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
   const [version, setVersion] = useState("");
   const [multiplier, setMultiplier] = useState(1);
+  const [koettermannUsername, setKoettermannUsername] = useState(
+    () => localStorage.getItem("koettermannUsername") ?? "",
+  );
+  const [koettermannPassword, setKoettermannPassword] = useState(
+    () => localStorage.getItem("koettermannPassword") ?? "",
+  );
+  const koettermannSessionRef = useRef<{
+    token: string;
+    expiresAt: number;
+  } | null>(null);
   const [grouping, setGrouping] = useState(
     localStorage.getItem("grouping") !== "false",
   );
@@ -88,39 +108,97 @@ export default function App() {
     }
   }, []);
 
+  // Clear cached session when credentials change so the next call re-authenticates.
   useEffect(() => {
-    if (Object.keys(xmlDocs).length === 1) {
-      const newPayload = createPayload(
-        Object.values(xmlDocs)[0],
-        multiplier,
-        description,
-        grouping,
-        customer,
-        undefined,
-        nonDiscountedArtNrs,
-      );
-      setPayload(newPayload);
+    koettermannSessionRef.current = null;
+  }, [koettermannUsername, koettermannPassword]);
 
-      // Calculate non-discounted stats
-      calculateNonDiscountedStats(newPayload);
-    } else if (Object.keys(xmlDocs).length > 1) {
-      const newPayload = createPayload(
-        xmlDocs,
-        multiplier,
-        description,
-        grouping,
-        customer,
-        undefined,
-        nonDiscountedArtNrs,
-      );
-      setPayload(newPayload);
+  const getShippingCost = useCallback(
+    async (
+      volume_m3: number,
+      countryCode: string,
+      zip: string,
+    ): Promise<number | null> => {
+      if (!koettermannUsername || !koettermannPassword) return null;
+      try {
+        const now = Date.now();
+        if (
+          !koettermannSessionRef.current ||
+          koettermannSessionRef.current.expiresAt <= now
+        ) {
+          const token = await koettermannLogin(
+            koettermannUsername,
+            koettermannPassword,
+          );
+          koettermannSessionRef.current = {
+            token,
+            expiresAt: now + 23 * 60 * 60 * 1000,
+          };
+        }
+        return await koettermannShippingPrice(
+          koettermannSessionRef.current.token,
+          countryCode,
+          zip,
+          volume_m3,
+        );
+      } catch (err) {
+        console.error("Koettermann API error, using approximation:", err);
+        return null;
+      }
+    },
+    [koettermannUsername, koettermannPassword],
+  );
 
-      // Calculate non-discounted stats
-      calculateNonDiscountedStats(newPayload);
-    } else {
+  useEffect(() => {
+    if (Object.keys(xmlDocs).length === 0) {
       setPayload(undefined);
       setNonDiscountedStats({ count: 0, totalValue: 0 });
+      return;
     }
+
+    let cancelled = false;
+
+    async function recalculate() {
+      const parsedArg =
+        Object.keys(xmlDocs).length === 1
+          ? Object.values(xmlDocs)[0]
+          : xmlDocs;
+
+      const { volumes } = computeShippingInputs(parsedArg);
+      const totalVolume = volumes.filter(Boolean).reduce((s, v) => s + v, 0);
+      const zip = customer?.zip ?? "24103";
+      const countryCode = customer?.countryCode ?? "DE";
+
+      const apiPrice = await getShippingCost(totalVolume, countryCode, zip);
+
+      if (cancelled) return;
+
+      const newPayload = createPayload(
+        parsedArg,
+        multiplier,
+        description,
+        grouping,
+        customer,
+        undefined,
+        nonDiscountedArtNrs,
+      );
+
+      if (apiPrice !== null) {
+        const lastItem = newPayload.lineItems[newPayload.lineItems.length - 1];
+        if (lastItem && "unitPrice" in lastItem) {
+          (lastItem as CustomLineItem).unitPrice.netAmount = apiPrice;
+        }
+      }
+
+      setPayload(newPayload);
+      calculateNonDiscountedStats(newPayload);
+    }
+
+    void recalculate();
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     xmlDocs,
     multiplier,
@@ -129,6 +207,7 @@ export default function App() {
     customer,
     nonDiscountedArtNrs,
     calculateNonDiscountedStats,
+    getShippingCost,
   ]);
 
   const handleItemDeleted = (index: number) => {
@@ -210,6 +289,16 @@ export default function App() {
         description={description}
         onDescriptionChange={setDescription}
         onNonDiscountedListChange={setNonDiscountedArtNrs}
+        koettermannUsername={koettermannUsername}
+        onKoettermannUsernameChange={(v) => {
+          setKoettermannUsername(v);
+          localStorage.setItem("koettermannUsername", v);
+        }}
+        koettermannPassword={koettermannPassword}
+        onKoettermannPasswordChange={(v) => {
+          setKoettermannPassword(v);
+          localStorage.setItem("koettermannPassword", v);
+        }}
       />
 
       <NonDiscountedWarningDialog

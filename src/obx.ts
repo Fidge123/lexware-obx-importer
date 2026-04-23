@@ -336,6 +336,19 @@ function calculateRoomTotal(lineItems: LineItem[]): number {
   }, 0);
 }
 
+export function computeShippingInputs(
+  parsed: Document | Record<string, Document>,
+  xpath: XPathEvaluator = new XPathEvaluator(),
+): { volumes: number[]; weights: number[] } {
+  evaluator = xpath;
+  if ("documentElement" in parsed) {
+    const doc = parsed as Document;
+    return { volumes: getVolumes(doc), weights: getWeights(doc) };
+  }
+  const docs = Object.values(parsed as Record<string, Document>);
+  return { volumes: docs.flatMap(getVolumes), weights: docs.flatMap(getWeights) };
+}
+
 export function createPayload(
   parsed: Document | Record<string, Document>,
   multiplierValue: number,
