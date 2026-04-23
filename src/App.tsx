@@ -137,8 +137,9 @@ export default function App() {
             password: koettermannPassword,
           };
         }
+        const { token } = koettermannSessionRef.current ?? { token: "" };
         return await koettermannShippingPrice(
-          koettermannSessionRef.current.token,
+          token,
           countryCode,
           zip,
           volume_m3,
