@@ -42,7 +42,6 @@ async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<bool> {
 
         println!("update installed");
         app.restart();
-        Ok(true)
     } else {
         Ok(false)
     }
