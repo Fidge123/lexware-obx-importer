@@ -220,9 +220,7 @@ export function SettingsModal({
                 {updateStatus === "checking" ? "Suche…" : "Nach Updates suchen"}
               </button>
               {updateStatus === "up-to-date" && (
-                <span className="text-gray-600 text-sm">
-                  Bereits aktuell
-                </span>
+                <span className="text-gray-600 text-sm">Bereits aktuell</span>
               )}
               {updateStatus === "updated" && (
                 <span className="text-green-600 text-sm">
