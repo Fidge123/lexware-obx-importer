@@ -111,7 +111,7 @@ export function SettingsModal({
               htmlFor="kmUsername"
               className="font-medium text-gray-700 text-sm"
             >
-              Km E-Mail:
+              Köttermann E-Mail:
             </label>
             <input
               id="kmUsername"
@@ -129,7 +129,7 @@ export function SettingsModal({
               htmlFor="kmPassword"
               className="font-medium text-gray-700 text-sm"
             >
-              Km Passwort:
+              Köttermann Passwort:
             </label>
             <input
               id="kmPassword"

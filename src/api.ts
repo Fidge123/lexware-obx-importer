@@ -10,6 +10,9 @@ export async function kmLogin(
     "https://koettermann.iw-erp.de/api/logins?downgrade=1",
     {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ login: { username, password } }),
     },
   );
