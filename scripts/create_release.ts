@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { readFile, writeFile } from "node:fs/promises";
 import { basename } from "node:path";
 import { promisify } from "node:util";
@@ -113,7 +113,7 @@ async function main() {
     await uploadAsset(releaseId, LATEST_JSON_PATH);
 
     console.log("🌐 Opening draft release in browser...");
-    await execAsync(`open ${releaseUrl}`);
+    await promisify(execFile)("open", [releaseUrl]);
 
     console.log("✨ Release process completed successfully!");
   } catch (error) {
