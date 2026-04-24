@@ -6,6 +6,7 @@ import {
 } from "@headlessui/react";
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { koettermannLogin } from "../api.ts";
 import { ApiKeyInput } from "./form/ApiKeyInput.tsx";
 import { DescriptionToggle } from "./form/DescriptionToggle.tsx";
 import { GroupingToggle } from "./form/GroupingToggle.tsx";
@@ -27,6 +28,21 @@ export function SettingsModal({
   const [xlsxFileName, setXlsxFileName] = useState<string | null>(
     localStorage.getItem("nonDiscountedFileName"),
   );
+  const [testStatus, setTestStatus] = useState<
+    "testing" | "success" | `error: ${string}` | null
+  >(null);
+
+  const handleTestCredentials = async () => {
+    setTestStatus("testing");
+    try {
+      await koettermannLogin(koettermannUsername, koettermannPassword);
+      setTestStatus("success");
+    } catch (err) {
+      setTestStatus(
+        `error: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  };
 
   const handleXlsxFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -101,7 +117,10 @@ export function SettingsModal({
               id="koettermannUsername"
               type="email"
               value={koettermannUsername}
-              onChange={(e) => onKoettermannUsernameChange(e.target.value)}
+              onChange={(e) => {
+                onKoettermannUsernameChange(e.target.value);
+                setTestStatus(null);
+              }}
               placeholder="benutzer@beispiel.de"
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
             />
@@ -116,10 +135,37 @@ export function SettingsModal({
               id="koettermannPassword"
               type="password"
               value={koettermannPassword}
-              onChange={(e) => onKoettermannPasswordChange(e.target.value)}
+              onChange={(e) => {
+                onKoettermannPasswordChange(e.target.value);
+                setTestStatus(null);
+              }}
               placeholder="••••••••"
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
             />
+
+            <div />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={
+                  !koettermannUsername ||
+                  !koettermannPassword ||
+                  testStatus === "testing"
+                }
+                onClick={handleTestCredentials}
+                className="rounded-md bg-gray-100 px-3 py-1 font-medium text-gray-700 text-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {testStatus === "testing" ? "Teste…" : "Verbindung testen"}
+              </button>
+              {testStatus === "success" && (
+                <span className="text-green-600 text-sm">✓ Verbunden</span>
+              )}
+              {testStatus?.startsWith("error") && (
+                <span className="text-red-600 text-sm">
+                  {testStatus.replace("error: ", "")}
+                </span>
+              )}
+            </div>
 
             <GroupingToggle value={grouping} onChange={onGroupingChange} />
             <DescriptionToggle

@@ -1,5 +1,7 @@
-import { fetch } from "@tauri-apps/plugin-http";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import type { Address, ContactsResponse, Quotation } from "./types";
+
+type FetchFn = typeof globalThis.fetch;
 
 const KOETTERMANN_BUILD_PARAMS =
   "iw-build-id=2026033003&iw-package-id=customer_erp_ui";
@@ -7,8 +9,9 @@ const KOETTERMANN_BUILD_PARAMS =
 export async function koettermannLogin(
   username: string,
   password: string,
+  fetchFn: FetchFn = tauriFetch as unknown as FetchFn,
 ): Promise<string> {
-  const response = await fetch(
+  const response = await fetchFn(
     `https://koettermann.iw-erp.de/api/logins?downgrade=1&tokenIdentifiers=iw-mqtt-native%2Ciw-external&validSeconds=86400&${KOETTERMANN_BUILD_PARAMS}`,
     {
       method: "POST",
@@ -30,8 +33,9 @@ export async function koettermannShippingPrice(
   countryCode: string,
   zip: string,
   volume_m3: number,
+  fetchFn: FetchFn = tauriFetch as unknown as FetchFn,
 ): Promise<number> {
-  const response = await fetch(
+  const response = await fetchFn(
     `https://koettermann.iw-erp.de/api/invoice/shipping_price/calculate/${countryCode}/${zip}/shipping-volume?quantity=${volume_m3}&${KOETTERMANN_BUILD_PARAMS}`,
     {
       method: "GET",

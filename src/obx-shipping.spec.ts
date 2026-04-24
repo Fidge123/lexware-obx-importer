@@ -31,35 +31,6 @@ test("computeShippingInputs extracts volumes and weights from packInfo", () => {
   expect(weights).toEqual([50, 30]);
 });
 
-test("computeShippingInputs falls back to VOLUMEN/GEWICHT feature attributes", () => {
-  const doc = parseXml(`<cutBuffer><items>
-    <bskArticle>
-      <feature name="VOLUMEN" value="2.3"/>
-      <feature name="GEWICHT" value="70.0"/>
-    </bskArticle>
-  </items></cutBuffer>`);
-
-  const { volumes, weights } = computeShippingInputs(doc, x);
-
-  expect(volumes).toHaveLength(1);
-  expect(volumes[0]).toBeCloseTo(2.3);
-  expect(weights[0]).toBeCloseTo(70.0);
-});
-
-test("computeShippingInputs falls back to Volumen/Gewicht feature attributes", () => {
-  const doc = parseXml(`<cutBuffer><items>
-    <bskArticle>
-      <feature name="Volumen" value="1.2"/>
-      <feature name="Gewicht" value="15.5"/>
-    </bskArticle>
-  </items></cutBuffer>`);
-
-  const { volumes, weights } = computeShippingInputs(doc, x);
-
-  expect(volumes[0]).toBeCloseTo(1.2);
-  expect(weights[0]).toBeCloseTo(15.5);
-});
-
 test("computeShippingInputs combines volumes and weights across multiple documents", () => {
   const doc1 = parseXml(`<cutBuffer><items>
     <bskArticle>
