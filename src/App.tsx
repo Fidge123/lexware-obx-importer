@@ -28,12 +28,8 @@ export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
   const [version, setVersion] = useState("");
   const [multiplier, setMultiplier] = useState(1);
-  const [kmUsername, setKmUsername] = useState(
-    () => localStorage.getItem("kmUsername") ?? "",
-  );
-  const [kmPassword, setKmPassword] = useState(
-    () => localStorage.getItem("kmPassword") ?? "",
-  );
+  const [kmUsername, setKmUsername] = useState(localStorage.getItem("kmUsername") ?? "");
+  const [kmPassword, setKmPassword] = useState(localStorage.getItem("kmPassword") ?? "");
   const kmSessionRef = useRef<{
     token: string;
     expiresAt: number;
