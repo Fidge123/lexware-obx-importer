@@ -4,6 +4,7 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react";
+import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import * as XLSX from "xlsx";
 import { kmLogin } from "../api.ts";
@@ -31,6 +32,21 @@ export function SettingsModal({
   const [testStatus, setTestStatus] = useState<
     "testing" | "success" | `error: ${string}` | null
   >(null);
+  const [updateStatus, setUpdateStatus] = useState<
+    "checking" | "up-to-date" | "updated" | `error: ${string}` | null
+  >(null);
+
+  const handleUpdate = async () => {
+    setUpdateStatus("checking");
+    try {
+      const found = await invoke<boolean>("trigger_update");
+      setUpdateStatus(found ? "updated" : "up-to-date");
+    } catch (err) {
+      setUpdateStatus(
+        `error: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  };
 
   const handleTestCredentials = async () => {
     setTestStatus("testing");
@@ -193,7 +209,32 @@ export function SettingsModal({
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={updateStatus === "checking"}
+                onClick={handleUpdate}
+                className="rounded-md bg-gray-100 px-3 py-1.5 font-medium text-gray-700 text-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {updateStatus === "checking" ? "Suche…" : "Nach Updates suchen"}
+              </button>
+              {updateStatus === "up-to-date" && (
+                <span className="text-gray-600 text-sm">
+                  Bereits aktuell
+                </span>
+              )}
+              {updateStatus === "updated" && (
+                <span className="text-green-600 text-sm">
+                  Update wird installiert…
+                </span>
+              )}
+              {updateStatus?.startsWith("error") && (
+                <span className="text-red-600 text-sm">
+                  {updateStatus.replace("error: ", "")}
+                </span>
+              )}
+            </div>
             <button
               type="button"
               onClick={onClose}
