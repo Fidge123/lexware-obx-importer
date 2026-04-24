@@ -284,12 +284,13 @@ function getShippingCosts(volumes: number[], weights: number[]): LineItem {
 function getVolumes(parsed: Document) {
   return getPrefix(parsed).flatMap(([, root]) =>
     get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='volume']/@value", context) ??
-          get(".//feature[@name='VOLUMEN']/@value", context) ??
-          get(".//feature[@name='Volumen']/@value", context),
-      )
+      .flatMap((context) => {
+        const byPackInfo = get(".//packInfo[@key='volume']/@value", context);
+        if (byPackInfo.length) return byPackInfo;
+        const byUpper = get(".//feature[@name='VOLUMEN']/@value", context);
+        if (byUpper.length) return byUpper;
+        return get(".//feature[@name='Volumen']/@value", context);
+      })
       .map((v) => parseFloat((v as Attr).value || "0")),
   );
 }
@@ -297,12 +298,16 @@ function getVolumes(parsed: Document) {
 function getWeights(parsed: Document) {
   return getPrefix(parsed).flatMap(([, root]) =>
     get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='netWeight']/@originalValue", context) ??
-          get(".//feature[@name='GEWICHT']/@value", context) ??
-          get(".//feature[@name='Gewicht']/@value", context),
-      )
+      .flatMap((context) => {
+        const byPackInfo = get(
+          ".//packInfo[@key='netWeight']/@originalValue",
+          context,
+        );
+        if (byPackInfo.length) return byPackInfo;
+        const byUpper = get(".//feature[@name='GEWICHT']/@value", context);
+        if (byUpper.length) return byUpper;
+        return get(".//feature[@name='Gewicht']/@value", context);
+      })
       .map((v) => parseFloat((v as Attr).value || "0")),
   );
 }
