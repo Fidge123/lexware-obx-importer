@@ -14,15 +14,20 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![trigger_update])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
 
-async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
+#[tauri::command]
+async fn trigger_update(app: tauri::AppHandle) -> Result<bool, String> {
+    update(app).await.map_err(|e| e.to_string())
+}
+
+async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<bool> {
     if let Some(update) = app.updater()?.check().await? {
         let mut downloaded = 0;
 
-        // alternatively we could also call update.download() and update.install() separately
         update
             .download_and_install(
                 |chunk_length, content_length| {
@@ -37,7 +42,8 @@ async fn update(app: tauri::AppHandle) -> tauri_plugin_updater::Result<()> {
 
         println!("update installed");
         app.restart();
+        Ok(true)
+    } else {
+        Ok(false)
     }
-
-    Ok(())
 }
