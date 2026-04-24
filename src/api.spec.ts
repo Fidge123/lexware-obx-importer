@@ -1,10 +1,12 @@
 import { beforeEach, expect, mock, test } from "bun:test";
 import { getContacts, kmLogin, kmShippingPrice } from "./api.ts";
 
-const mockFetch = mock(async () => ({
-  ok: true,
-  json: async () => ({}),
-}));
+const mockFetch = mock(
+  async (): Promise<object> => ({
+    ok: true,
+    json: async () => ({}),
+  }),
+);
 
 beforeEach(() => {
   mockFetch.mockClear();
@@ -24,7 +26,7 @@ test("kmLogin sends correct request and returns sessionid", async () => {
 
   expect(result).toBe("tok-abc");
 
-  const [url, opts] = mockFetch.mock.calls[0] as [
+  const [url, opts] = mockFetch.mock.calls[0] as unknown as [
     string,
     { method: string; body: string },
   ];
@@ -62,7 +64,7 @@ test("kmShippingPrice builds correct URL and returns netto_value", async () => {
 
   expect(result).toBe(280);
 
-  const [url, opts] = mockFetch.mock.calls[0] as [
+  const [url, opts] = mockFetch.mock.calls[0] as unknown as [
     string,
     { method: string; headers: Record<string, string> },
   ];
@@ -134,7 +136,7 @@ test("getContacts sends correct request with Bearer token", async () => {
     mockFetch as unknown as typeof fetch,
   );
 
-  const [url, opts] = mockFetch.mock.calls[0] as [
+  const [url, opts] = mockFetch.mock.calls[0] as unknown as [
     string,
     { method: string; headers: Record<string, string> },
   ];
@@ -185,7 +187,7 @@ test("getContacts appends filter as name query param", async () => {
 
   await getContacts("key", "Muster", mockFetch as unknown as typeof fetch);
 
-  const [url] = mockFetch.mock.calls[0] as [string];
+  const [url] = mockFetch.mock.calls[0] as unknown as [string];
   expect(url).toContain("name=Muster");
 });
 
