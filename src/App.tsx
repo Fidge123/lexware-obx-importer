@@ -6,17 +6,13 @@ import {
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
-  type FormEvent,
+  type SubmitEvent,
   useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
-import {
-  createQuotation,
-  koettermannLogin,
-  koettermannShippingPrice,
-} from "./api.ts";
+import { createQuotation, kmLogin, kmShippingPrice } from "./api.ts";
 import { Cog } from "./components/Cog.tsx";
 import { ErrorDialog } from "./components/ErrorDialog.tsx";
 import { CustomerInput } from "./components/form/CustomerInput.tsx";
@@ -32,13 +28,13 @@ export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
   const [version, setVersion] = useState("");
   const [multiplier, setMultiplier] = useState(1);
-  const [koettermannUsername, setKoettermannUsername] = useState(
-    () => localStorage.getItem("koettermannUsername") ?? "",
+  const [kmUsername, setKmUsername] = useState(
+    () => localStorage.getItem("kmUsername") ?? "",
   );
-  const [koettermannPassword, setKoettermannPassword] = useState(
-    () => localStorage.getItem("koettermannPassword") ?? "",
+  const [kmPassword, setKmPassword] = useState(
+    () => localStorage.getItem("kmPassword") ?? "",
   );
-  const koettermannSessionRef = useRef<{
+  const kmSessionRef = useRef<{
     token: string;
     expiresAt: number;
     username: string;
@@ -113,43 +109,34 @@ export default function App() {
   const getShippingCost = useCallback(
     async (
       volume_m3: number,
-      countryCode: string,
       zip: string,
     ): Promise<number | null> => {
-      if (!koettermannUsername || !koettermannPassword) return null;
+      if (!kmUsername || !kmPassword) return null;
       try {
         const now = Date.now();
-        const cached = koettermannSessionRef.current;
+        const cached = kmSessionRef.current;
         if (
           !cached ||
           cached.expiresAt <= now ||
-          cached.username !== koettermannUsername ||
-          cached.password !== koettermannPassword
+          cached.username !== kmUsername ||
+          cached.password !== kmPassword
         ) {
-          const token = await koettermannLogin(
-            koettermannUsername,
-            koettermannPassword,
-          );
-          koettermannSessionRef.current = {
+          const token = await kmLogin(kmUsername, kmPassword);
+          kmSessionRef.current = {
             token,
             expiresAt: now + 23 * 60 * 60 * 1000,
-            username: koettermannUsername,
-            password: koettermannPassword,
+            username: kmUsername,
+            password: kmPassword,
           };
         }
-        const { token } = koettermannSessionRef.current ?? { token: "" };
-        return await koettermannShippingPrice(
-          token,
-          countryCode,
-          zip,
-          volume_m3,
-        );
+        const { token } = kmSessionRef.current ?? { token: "" };
+        return await kmShippingPrice(token, zip, volume_m3);
       } catch (err) {
-        console.error("Koettermann API error, using approximation:", err);
+        console.error("Km API error, using approximation:", err);
         return null;
       }
     },
-    [koettermannUsername, koettermannPassword],
+    [kmUsername, kmPassword],
   );
 
   useEffect(() => {
@@ -168,9 +155,8 @@ export default function App() {
       const { volumes } = computeShippingInputs(parsedArg);
       const totalVolume = volumes.filter(Boolean).reduce((s, v) => s + v, 0);
       const zip = customer?.zip ?? "24103";
-      const countryCode = customer?.countryCode ?? "DE";
 
-      const apiPrice = await getShippingCost(totalVolume, countryCode, zip);
+      const apiPrice = await getShippingCost(totalVolume, zip);
 
       if (cancelled) return;
 
@@ -244,7 +230,7 @@ export default function App() {
     });
   }
 
-  function submit(e: FormEvent<HTMLFormElement>) {
+  function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (payload) {
       createQuotation(payload, apiKey)
@@ -290,15 +276,15 @@ export default function App() {
         description={description}
         onDescriptionChange={setDescription}
         onNonDiscountedListChange={setNonDiscountedArtNrs}
-        koettermannUsername={koettermannUsername}
-        onKoettermannUsernameChange={(v) => {
-          setKoettermannUsername(v);
-          localStorage.setItem("koettermannUsername", v);
+        kmUsername={kmUsername}
+        onKmUsernameChange={(v) => {
+          setKmUsername(v);
+          localStorage.setItem("kmUsername", v);
         }}
-        koettermannPassword={koettermannPassword}
-        onKoettermannPasswordChange={(v) => {
-          setKoettermannPassword(v);
-          localStorage.setItem("koettermannPassword", v);
+        kmPassword={kmPassword}
+        onKmPasswordChange={(v) => {
+          setKmPassword(v);
+          localStorage.setItem("kmPassword", v);
         }}
       />
 

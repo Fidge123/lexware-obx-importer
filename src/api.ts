@@ -1,54 +1,44 @@
-import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import { fetch } from "@tauri-apps/plugin-http";
 import type { Address, ContactsResponse, Quotation } from "./types";
 
-type FetchFn = typeof globalThis.fetch;
-
-const KOETTERMANN_BUILD_PARAMS =
-  "iw-build-id=2026033003&iw-package-id=customer_erp_ui";
-
-export async function koettermannLogin(
+export async function kmLogin(
   username: string,
   password: string,
-  fetchFn: FetchFn = tauriFetch as unknown as FetchFn,
+  fetchFn = fetch,
 ): Promise<string> {
   const response = await fetchFn(
-    `https://koettermann.iw-erp.de/api/logins?downgrade=1&tokenIdentifiers=iw-mqtt-native%2Ciw-external&validSeconds=86400&${KOETTERMANN_BUILD_PARAMS}`,
+    "https://koettermann.iw-erp.de/api/logins?downgrade=1",
     {
       method: "POST",
       body: JSON.stringify({ login: { username, password } }),
-      headers: {
-        "Content-Type": "application/json",
-        "x-iw-convert-to-camel-case": "1",
-      },
     },
   );
-  if (!response.ok)
-    throw new Error(`Koettermann login failed (${response.status})`);
+  if (!response.ok) {
+    throw new Error(`Km login failed (${response.status})`);
+  }
   const data = (await response.json()) as { sessionid: string };
   return data.sessionid;
 }
 
-export async function koettermannShippingPrice(
+export async function kmShippingPrice(
   sessionToken: string,
-  countryCode: string,
   zip: string,
   volume_m3: number,
-  fetchFn: FetchFn = tauriFetch as unknown as FetchFn,
+  fetchFn = fetch,
 ): Promise<number> {
   const response = await fetchFn(
-    `https://koettermann.iw-erp.de/api/invoice/shipping_price/calculate/${countryCode}/${zip}/shipping-volume?quantity=${volume_m3}&${KOETTERMANN_BUILD_PARAMS}`,
+    `https://koettermann.iw-erp.de/api/invoice/shipping_price/calculate/DE/${zip}/shipping-volume?quantity=${volume_m3}`,
     {
       method: "GET",
       headers: {
         "x-session-token": sessionToken,
-        "x-iw-convert-to-camel-case": "1",
       },
     },
   );
   if (!response.ok)
-    throw new Error(`Koettermann price fetch failed (${response.status})`);
-  const data = (await response.json()) as { nettoValue: number };
-  return data.nettoValue;
+    throw new Error(`Km price fetch failed (${response.status})`);
+  const data = (await response.json()) as { netto_value: number };
+  return data.netto_value;
 }
 
 export async function createQuotation(

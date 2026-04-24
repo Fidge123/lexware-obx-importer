@@ -6,7 +6,7 @@ import {
 } from "@headlessui/react";
 import { useState } from "react";
 import * as XLSX from "xlsx";
-import { koettermannLogin } from "../api.ts";
+import { kmLogin } from "../api.ts";
 import { ApiKeyInput } from "./form/ApiKeyInput.tsx";
 import { DescriptionToggle } from "./form/DescriptionToggle.tsx";
 import { GroupingToggle } from "./form/GroupingToggle.tsx";
@@ -20,10 +20,10 @@ export function SettingsModal({
   description,
   onDescriptionChange,
   onNonDiscountedListChange,
-  koettermannUsername,
-  onKoettermannUsernameChange,
-  koettermannPassword,
-  onKoettermannPasswordChange,
+  kmUsername,
+  onKmUsernameChange,
+  kmPassword,
+  onKmPasswordChange,
 }: Props) {
   const [xlsxFileName, setXlsxFileName] = useState<string | null>(
     localStorage.getItem("nonDiscountedFileName"),
@@ -35,7 +35,7 @@ export function SettingsModal({
   const handleTestCredentials = async () => {
     setTestStatus("testing");
     try {
-      await koettermannLogin(koettermannUsername, koettermannPassword);
+      await kmLogin(kmUsername, kmPassword);
       setTestStatus("success");
     } catch (err) {
       setTestStatus(
@@ -108,17 +108,17 @@ export function SettingsModal({
             <ApiKeyInput onChange={onApiKeyChange} />
 
             <label
-              htmlFor="koettermannUsername"
+              htmlFor="kmUsername"
               className="font-medium text-gray-700 text-sm"
             >
-              Koettermann E-Mail:
+              Km E-Mail:
             </label>
             <input
-              id="koettermannUsername"
+              id="kmUsername"
               type="email"
-              value={koettermannUsername}
+              value={kmUsername}
               onChange={(e) => {
-                onKoettermannUsernameChange(e.target.value);
+                onKmUsernameChange(e.target.value);
                 setTestStatus(null);
               }}
               placeholder="benutzer@beispiel.de"
@@ -126,17 +126,17 @@ export function SettingsModal({
             />
 
             <label
-              htmlFor="koettermannPassword"
+              htmlFor="kmPassword"
               className="font-medium text-gray-700 text-sm"
             >
-              Koettermann Passwort:
+              Km Passwort:
             </label>
             <input
-              id="koettermannPassword"
+              id="kmPassword"
               type="password"
-              value={koettermannPassword}
+              value={kmPassword}
               onChange={(e) => {
-                onKoettermannPasswordChange(e.target.value);
+                onKmPasswordChange(e.target.value);
                 setTestStatus(null);
               }}
               placeholder="••••••••"
@@ -148,9 +148,7 @@ export function SettingsModal({
               <button
                 type="button"
                 disabled={
-                  !koettermannUsername ||
-                  !koettermannPassword ||
-                  testStatus === "testing"
+                  !kmUsername || !kmPassword || testStatus === "testing"
                 }
                 onClick={handleTestCredentials}
                 className="rounded-md bg-gray-100 px-3 py-1 font-medium text-gray-700 text-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
@@ -219,8 +217,8 @@ interface Props {
   description: boolean;
   onDescriptionChange: (value: boolean) => void;
   onNonDiscountedListChange: (artNrs: Set<string>) => void;
-  koettermannUsername: string;
-  onKoettermannUsernameChange: (value: string) => void;
-  koettermannPassword: string;
-  onKoettermannPasswordChange: (value: string) => void;
+  kmUsername: string;
+  onKmUsernameChange: (value: string) => void;
+  kmPassword: string;
+  onKmPasswordChange: (value: string) => void;
 }
