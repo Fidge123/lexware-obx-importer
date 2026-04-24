@@ -107,10 +107,7 @@ export default function App() {
   }, []);
 
   const getShippingCost = useCallback(
-    async (
-      volume_m3: number,
-      zip: string,
-    ): Promise<number | null> => {
+    async (volume_m3: number, zip: string): Promise<number | null> => {
       if (!kmUsername || !kmPassword) return null;
       try {
         const now = Date.now();
