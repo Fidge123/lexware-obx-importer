@@ -5,8 +5,14 @@ import {
 } from "@headlessui/react";
 import { getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { type FormEvent, useCallback, useEffect, useState } from "react";
-import { createQuotation } from "./api.ts";
+import {
+  type SubmitEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { createQuotation, kmLogin, kmShippingPrice } from "./api.ts";
 import { Cog } from "./components/Cog.tsx";
 import { ErrorDialog } from "./components/ErrorDialog.tsx";
 import { CustomerInput } from "./components/form/CustomerInput.tsx";
@@ -15,13 +21,25 @@ import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
 import { NonDiscountedWarningDialog } from "./components/NonDiscountedWarningDialog.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
-import { createPayload } from "./obx.ts";
+import { computeShippingInputs, createPayload } from "./obx.ts";
 import type { Address, CustomLineItem, LineItem, Quotation } from "./types.ts";
 
 export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
   const [version, setVersion] = useState("");
   const [multiplier, setMultiplier] = useState(1);
+  const [kmUsername, setKmUsername] = useState(
+    localStorage.getItem("kmUsername") ?? "",
+  );
+  const [kmPassword, setKmPassword] = useState(
+    localStorage.getItem("kmPassword") ?? "",
+  );
+  const kmSessionRef = useRef<{
+    token: string;
+    expiresAt: number;
+    username: string;
+    password: string;
+  } | null>(null);
   const [grouping, setGrouping] = useState(
     localStorage.getItem("grouping") !== "false",
   );
@@ -88,39 +106,73 @@ export default function App() {
     }
   }, []);
 
+  const getShippingCost = useCallback(
+    async (volume_m3: number, zip: string): Promise<number | null> => {
+      if (!kmUsername || !kmPassword) return null;
+      try {
+        const now = Date.now();
+        const cached = kmSessionRef.current;
+        if (
+          !cached ||
+          cached.expiresAt <= now ||
+          cached.username !== kmUsername ||
+          cached.password !== kmPassword
+        ) {
+          const token = await kmLogin(kmUsername, kmPassword);
+          kmSessionRef.current = {
+            token,
+            expiresAt: now + 23 * 60 * 60 * 1000,
+            username: kmUsername,
+            password: kmPassword,
+          };
+        }
+        const { token } = kmSessionRef.current ?? { token: "" };
+        return await kmShippingPrice(token, zip, volume_m3);
+      } catch (err) {
+        console.error("Km API error, using approximation:", err);
+        return null;
+      }
+    },
+    [kmUsername, kmPassword],
+  );
+
   useEffect(() => {
-    if (Object.keys(xmlDocs).length === 1) {
-      const newPayload = createPayload(
-        Object.values(xmlDocs)[0],
-        multiplier,
-        description,
-        grouping,
-        customer,
-        undefined,
-        nonDiscountedArtNrs,
-      );
-      setPayload(newPayload);
-
-      // Calculate non-discounted stats
-      calculateNonDiscountedStats(newPayload);
-    } else if (Object.keys(xmlDocs).length > 1) {
-      const newPayload = createPayload(
-        xmlDocs,
-        multiplier,
-        description,
-        grouping,
-        customer,
-        undefined,
-        nonDiscountedArtNrs,
-      );
-      setPayload(newPayload);
-
-      // Calculate non-discounted stats
-      calculateNonDiscountedStats(newPayload);
-    } else {
+    if (Object.keys(xmlDocs).length === 0) {
       setPayload(undefined);
       setNonDiscountedStats({ count: 0, totalValue: 0 });
+      return;
     }
+
+    (async () => {
+      const parsedArg =
+        Object.keys(xmlDocs).length === 1 ? Object.values(xmlDocs)[0] : xmlDocs;
+
+      const { volumes } = computeShippingInputs(parsedArg);
+      const totalVolume = volumes.filter(Boolean).reduce((s, v) => s + v, 0);
+      const zip = customer?.zip ?? "24103";
+
+      const apiPrice = await getShippingCost(totalVolume, zip);
+
+      const newPayload = createPayload(
+        parsedArg,
+        multiplier,
+        description,
+        grouping,
+        customer,
+        undefined,
+        nonDiscountedArtNrs,
+      );
+
+      if (apiPrice !== null) {
+        const lastItem = newPayload.lineItems[newPayload.lineItems.length - 1];
+        if (lastItem && "unitPrice" in lastItem) {
+          (lastItem as CustomLineItem).unitPrice.netAmount = apiPrice;
+        }
+      }
+
+      setPayload(newPayload);
+      calculateNonDiscountedStats(newPayload);
+    })();
   }, [
     xmlDocs,
     multiplier,
@@ -129,6 +181,7 @@ export default function App() {
     customer,
     nonDiscountedArtNrs,
     calculateNonDiscountedStats,
+    getShippingCost,
   ]);
 
   const handleItemDeleted = (index: number) => {
@@ -164,7 +217,7 @@ export default function App() {
     });
   }
 
-  function submit(e: FormEvent<HTMLFormElement>) {
+  function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if (payload) {
       createQuotation(payload, apiKey)
@@ -210,6 +263,16 @@ export default function App() {
         description={description}
         onDescriptionChange={setDescription}
         onNonDiscountedListChange={setNonDiscountedArtNrs}
+        kmUsername={kmUsername}
+        onKmUsernameChange={(v) => {
+          setKmUsername(v);
+          localStorage.setItem("kmUsername", v);
+        }}
+        kmPassword={kmPassword}
+        onKmPasswordChange={(v) => {
+          setKmPassword(v);
+          localStorage.setItem("kmPassword", v);
+        }}
       />
 
       <NonDiscountedWarningDialog

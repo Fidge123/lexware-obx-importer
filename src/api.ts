@@ -1,11 +1,55 @@
 import { fetch } from "@tauri-apps/plugin-http";
 import type { Address, ContactsResponse, Quotation } from "./types";
 
+export async function kmLogin(
+  username: string,
+  password: string,
+  fetchFn = fetch,
+): Promise<string> {
+  const response = await fetchFn(
+    "https://koettermann.iw-erp.de/api/logins?downgrade=1",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ login: { username, password } }),
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`Km login failed (${response.status})`);
+  }
+  const data = (await response.json()) as { sessionid: string };
+  return data.sessionid;
+}
+
+export async function kmShippingPrice(
+  sessionToken: string,
+  zip: string,
+  volume_m3: number,
+  fetchFn = fetch,
+): Promise<number> {
+  const response = await fetchFn(
+    `https://koettermann.iw-erp.de/api/invoice/shipping_price/calculate/DE/${zip}/shipping-volume?quantity=${Math.ceil(volume_m3)}`,
+    {
+      method: "GET",
+      headers: {
+        "x-session-token": sessionToken,
+      },
+    },
+  );
+  if (!response.ok)
+    throw new Error(`Km price fetch failed (${response.status})`);
+  const data = (await response.json()) as { netto_value: number };
+  return data.netto_value;
+}
+
 export async function createQuotation(
   quotation: Quotation,
   apiKey: string,
+  fetchFn = fetch,
 ): Promise<string> {
-  const response = await fetch("https://api.lexware.io/v1/quotations", {
+  const response = await fetchFn("https://api.lexware.io/v1/quotations", {
     method: "POST",
     body: JSON.stringify(quotation),
     headers: {
@@ -24,6 +68,7 @@ export async function createQuotation(
 export async function getContacts(
   apiKey: string,
   filter?: string,
+  fetchFn = fetch,
 ): Promise<Address[]> {
   const url = new URL("https://api.lexware.io/v1/contacts");
 
@@ -35,7 +80,7 @@ export async function getContacts(
     url.searchParams.append("name", filter);
   }
 
-  const response = await fetch(url.toString(), {
+  const response = await fetchFn(url.toString(), {
     method: "GET",
     headers: {
       Accept: "application/json",

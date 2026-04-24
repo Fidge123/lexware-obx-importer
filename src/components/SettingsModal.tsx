@@ -6,6 +6,7 @@ import {
 } from "@headlessui/react";
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { kmLogin } from "../api.ts";
 import { ApiKeyInput } from "./form/ApiKeyInput.tsx";
 import { DescriptionToggle } from "./form/DescriptionToggle.tsx";
 import { GroupingToggle } from "./form/GroupingToggle.tsx";
@@ -19,10 +20,29 @@ export function SettingsModal({
   description,
   onDescriptionChange,
   onNonDiscountedListChange,
+  kmUsername,
+  onKmUsernameChange,
+  kmPassword,
+  onKmPasswordChange,
 }: Props) {
   const [xlsxFileName, setXlsxFileName] = useState<string | null>(
     localStorage.getItem("nonDiscountedFileName"),
   );
+  const [testStatus, setTestStatus] = useState<
+    "testing" | "success" | `error: ${string}` | null
+  >(null);
+
+  const handleTestCredentials = async () => {
+    setTestStatus("testing");
+    try {
+      await kmLogin(kmUsername, kmPassword);
+      setTestStatus("success");
+    } catch (err) {
+      setTestStatus(
+        `error: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  };
 
   const handleXlsxFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -86,6 +106,65 @@ export function SettingsModal({
 
           <div className="grid grid-cols-[1fr_2fr] items-center gap-4">
             <ApiKeyInput onChange={onApiKeyChange} />
+
+            <label
+              htmlFor="kmUsername"
+              className="font-medium text-gray-700 text-sm"
+            >
+              Köttermann E-Mail:
+            </label>
+            <input
+              id="kmUsername"
+              type="email"
+              value={kmUsername}
+              onChange={(e) => {
+                onKmUsernameChange(e.target.value);
+                setTestStatus(null);
+              }}
+              placeholder="benutzer@beispiel.de"
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            />
+
+            <label
+              htmlFor="kmPassword"
+              className="font-medium text-gray-700 text-sm"
+            >
+              Köttermann Passwort:
+            </label>
+            <input
+              id="kmPassword"
+              type="password"
+              value={kmPassword}
+              onChange={(e) => {
+                onKmPasswordChange(e.target.value);
+                setTestStatus(null);
+              }}
+              placeholder="••••••••"
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none"
+            />
+
+            <div />
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={
+                  !kmUsername || !kmPassword || testStatus === "testing"
+                }
+                onClick={handleTestCredentials}
+                className="rounded-md bg-gray-100 px-3 py-1 font-medium text-gray-700 text-sm hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {testStatus === "testing" ? "Teste…" : "Verbindung testen"}
+              </button>
+              {testStatus === "success" && (
+                <span className="text-green-600 text-sm">✓ Verbunden</span>
+              )}
+              {testStatus?.startsWith("error") && (
+                <span className="text-red-600 text-sm">
+                  {testStatus.replace("error: ", "")}
+                </span>
+              )}
+            </div>
+
             <GroupingToggle value={grouping} onChange={onGroupingChange} />
             <DescriptionToggle
               value={description}
@@ -138,4 +217,8 @@ interface Props {
   description: boolean;
   onDescriptionChange: (value: boolean) => void;
   onNonDiscountedListChange: (artNrs: Set<string>) => void;
+  kmUsername: string;
+  onKmUsernameChange: (value: string) => void;
+  kmPassword: string;
+  onKmPasswordChange: (value: string) => void;
 }
