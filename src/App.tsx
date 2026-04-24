@@ -139,9 +139,7 @@ export default function App() {
       return;
     }
 
-    let cancelled = false;
-
-    async function recalculate() {
+    (async () => {
       const parsedArg =
         Object.keys(xmlDocs).length === 1 ? Object.values(xmlDocs)[0] : xmlDocs;
 
@@ -150,8 +148,6 @@ export default function App() {
       const zip = customer?.zip ?? "24103";
 
       const apiPrice = await getShippingCost(totalVolume, zip);
-
-      if (cancelled) return;
 
       const newPayload = createPayload(
         parsedArg,
@@ -172,13 +168,7 @@ export default function App() {
 
       setPayload(newPayload);
       calculateNonDiscountedStats(newPayload);
-    }
-
-    void recalculate();
-
-    return () => {
-      cancelled = true;
-    };
+    })();
   }, [
     xmlDocs,
     multiplier,
