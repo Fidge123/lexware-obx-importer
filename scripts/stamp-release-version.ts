@@ -7,7 +7,8 @@ interface TauriConfig {
 }
 
 export function createStampedReleaseVersion(baseVersion: string): string {
-  return `${baseVersion}-main.${String(Date.now())}`;
+  const [major, minor, patch] = baseVersion.split(".").map(Number);
+  return `${major}.${minor}.${patch + 1}-main.${String(Date.now())}`;
 }
 
 function stampTauriConfigContent(
