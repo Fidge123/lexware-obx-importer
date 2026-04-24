@@ -30,7 +30,7 @@ export async function kmShippingPrice(
   fetchFn = fetch,
 ): Promise<number> {
   const response = await fetchFn(
-    `https://koettermann.iw-erp.de/api/invoice/shipping_price/calculate/DE/${zip}/shipping-volume?quantity=${volume_m3}`,
+    `https://koettermann.iw-erp.de/api/invoice/shipping_price/calculate/DE/${zip}/shipping-volume?quantity=${Math.ceil(volume_m3)}`,
     {
       method: "GET",
       headers: {
