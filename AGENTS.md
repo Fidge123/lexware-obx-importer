@@ -10,8 +10,8 @@ The application is built for macOS using Bun as the runtime and package manager.
 ### Core Technologies
 
 - **Framework**: Tauri v2 (Rust backend, web frontend)
-- **Frontend**: React 19 + TypeScript 5.9
-- **Bundler**: Vite 7 with React plugin
+- **Frontend**: React 19 + TypeScript 7
+- **Bundler**: Vite 8 with React plugin
 - **Runtime**: Bun (for development and dependency management)
 - **Styling**: Tailwind CSS v4 + Headless UI components
 - **State Management**: React useState/useEffect hooks (no external state library)
@@ -20,7 +20,7 @@ The application is built for macOS using Bun as the runtime and package manager.
 
 - **Linting & Formatting**: Biome (all-in-one toolchain for linting and formatting)
 - **Testing**: Bun test with @xmldom/xmldom for XML parsing tests
-- **Package Manager**: Bun (uses bun.lockb)
+- **Package Manager**: Bun (uses bun.lock)
 
 ## Code Style & Conventions
 
