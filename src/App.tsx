@@ -23,6 +23,11 @@ import { NonDiscountedWarningDialog } from "./components/NonDiscountedWarningDia
 import { SettingsModal } from "./components/SettingsModal.tsx";
 import { computeShippingInputs, createPayload } from "./obx.ts";
 import type { Address, CustomLineItem, LineItem, Quotation } from "./types.ts";
+import { money } from "./util.ts";
+
+function isNonDiscountedItem(item: LineItem): item is CustomLineItem {
+  return "isNonDiscounted" in item && Boolean(item.isNonDiscounted);
+}
 
 export default function App() {
   const [apiKey, setApiKey] = useState(localStorage.getItem("apiKey") || "");
@@ -88,13 +93,9 @@ export default function App() {
     let totalValue = 0;
 
     for (const item of quotation.lineItems) {
-      if (
-        "isNonDiscounted" in item &&
-        (item as CustomLineItem).isNonDiscounted
-      ) {
+      if (isNonDiscountedItem(item)) {
         count++;
-        const customItem = item as CustomLineItem;
-        totalValue += customItem.unitPrice.netAmount * customItem.quantity;
+        totalValue += item.unitPrice.netAmount * item.quantity;
       }
     }
 
@@ -183,6 +184,38 @@ export default function App() {
     calculateNonDiscountedStats,
     getShippingCost,
   ]);
+
+  const handleApplyNonDiscountedSurcharge = (percentage: number) => {
+    setWarningDialogOpen(false);
+    if (!payload) {
+      return;
+    }
+
+    const factor = 1 + percentage / 100;
+    const lineItems = payload.lineItems.map((item) =>
+      isNonDiscountedItem(item)
+        ? {
+            ...item,
+            unitPrice: {
+              ...item.unitPrice,
+              netAmount: money(item.unitPrice.netAmount * factor),
+            },
+          }
+        : item,
+    );
+
+    setPayload({ ...payload, lineItems });
+    setNonDiscountedStats((stats) => ({
+      ...stats,
+      totalValue: lineItems.reduce(
+        (total, item) =>
+          isNonDiscountedItem(item)
+            ? total + item.unitPrice.netAmount * item.quantity
+            : total,
+        0,
+      ),
+    }));
+  };
 
   const handleItemDeleted = (index: number) => {
     if (payload) {
@@ -278,6 +311,7 @@ export default function App() {
       <NonDiscountedWarningDialog
         isOpen={warningDialogOpen}
         onClose={() => setWarningDialogOpen(false)}
+        onApplySurcharge={handleApplyNonDiscountedSurcharge}
         count={nonDiscountedStats.count}
         totalValue={nonDiscountedStats.totalValue}
       />
