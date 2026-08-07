@@ -15,6 +15,10 @@ export function listen(
   }
 }
 
+export function money(num: number): number {
+  return Math.round((num + Number.EPSILON) * 100) / 100;
+}
+
 export function count(lineItems: LineItemWithType[]): number {
   return lineItems.reduce(
     (count, item) =>

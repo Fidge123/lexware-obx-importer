@@ -6,6 +6,7 @@ import type {
   SubLineItem,
   TextLineItem,
 } from "./types";
+import { money } from "./util.ts";
 
 let evaluator: XPathEvaluator;
 let multiplier: number;
@@ -19,10 +20,6 @@ function iterate(xpathResult: XPathResult): Node[] {
     node = xpathResult.iterateNext();
   }
   return array;
-}
-
-function money(num: number): number {
-  return Math.round((num + Number.EPSILON) * 100) / 100;
 }
 
 function get(xpath: string, context: Node): Node[] {
