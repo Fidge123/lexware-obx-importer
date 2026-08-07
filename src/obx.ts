@@ -8,6 +8,13 @@ import type {
 } from "./types";
 import { money } from "./util.ts";
 
+// Articles whose artNr[@type='final'] is a planning keyword instead of an
+// article number (e.g. "TEILPLANNUNG_TP | Planungshilfe Tischplatten"), mapped
+// to the name that should be shown to the customer.
+const planningHelpers = new Map([
+  ["TEILPLANNUNG_TP", "Tischplatte individuell"],
+]);
+
 let evaluator: XPathEvaluator;
 let multiplier: number;
 let nonDiscountedArtNrs: Set<string>;
@@ -61,42 +68,42 @@ function getPrefix(parsed: Document): [string, Node][] {
 
 function createSubItems(
   context: Node,
-  parent: string,
+  parent: string | undefined,
   includeDescription = true,
 ): TextLineItem[] {
-  const subItems = [
-    parent,
-    ...aggregateDuplicates(
-      get(`.//bskArticle`, context).map(
-        (node): SubLineItem => ({
-          name: `${getString(
-            `./description[@type='short']/text[@lang='de']`,
+  const children = aggregateDuplicates(
+    get(`.//bskArticle`, context).map(
+      (node): SubLineItem => ({
+        name: `${getString(
+          `./description[@type='short']/text[@lang='de']`,
+          node,
+        )} | ${getString(`./artNr[@type='final']`, node)}`,
+        unitPrice: {
+          netAmount: getNumber(
+            `./itemPrice[@type='sale'][@pd='1']/@value`,
             node,
-          )} | ${getString(`./artNr[@type='final']`, node)}`,
-          unitPrice: {
-            netAmount: getNumber(
-              `./itemPrice[@type='sale'][@pd='1']/@value`,
-              node,
-            ),
-          },
-          description:
-            getString(
-              `./description[@type='features']/text[@lang='de']`,
-              node,
-            ) || "",
-          quantity: 1,
-        }),
-      ),
-    ).map((item) =>
-      item.unitPrice?.netAmount
-        ? `${item.quantity}x ${item.name} | je ${(
-            item.unitPrice.netAmount * multiplier
-          ).toFixed(2)} EUR${
-            includeDescription ? `\n${item.description}\n` : ""
-          }`
-        : `${item.quantity}x ${item.name}`,
+          ),
+        },
+        description:
+          getString(`./description[@type='features']/text[@lang='de']`, node) ||
+          "",
+        quantity: 1,
+      }),
     ),
-  ];
+  ).map((item) =>
+    item.unitPrice?.netAmount
+      ? `${item.quantity}x ${item.name} | je ${(
+          item.unitPrice.netAmount * multiplier
+        ).toFixed(2)} EUR${includeDescription ? `\n${item.description}\n` : ""}`
+      : `${item.quantity}x ${item.name}`,
+  );
+
+  if (children.length === 0) {
+    return [];
+  }
+
+  // Planning helpers are listed without their own line, only their children.
+  const subItems = parent ? [parent, ...children] : children;
 
   if (subItems.join("\n").length >= 2000) {
     const divisor = Math.ceil(subItems.join("\n").length / 2000);
@@ -115,15 +122,13 @@ function createSubItems(
     return list;
   }
 
-  return subItems.length > 1
-    ? [
-        {
-          type: "text",
-          name: "Bestehend aus:",
-          description: subItems.join("\n").trim(),
-        },
-      ]
-    : [];
+  return [
+    {
+      type: "text",
+      name: "Bestehend aus:",
+      description: subItems.join("\n").trim(),
+    },
+  ];
 }
 
 function createLineItem(
@@ -132,10 +137,15 @@ function createLineItem(
   includeDescription = true,
 ): [CustomLineItem, ...Array<TextLineItem>] {
   const artNr = getString("./artNr[@type='final']", context) ?? "";
+  // Planning helpers carry a keyword instead of a real article number. They are
+  // only a container for their children, so they get a readable name and are
+  // left out of the "Bestehend aus" summary.
+  const planningHelperName = planningHelpers.get(artNr.toUpperCase());
   const name =
+    planningHelperName ??
     artNr +
-    " | " +
-    getString("./description[@type='short']/text[@lang='de']", context);
+      " | " +
+      getString("./description[@type='short']/text[@lang='de']", context);
   const price =
     getNumber("./itemPrice[@type='sale'][@pd='1']/@value", context) *
     multiplier;
@@ -152,7 +162,9 @@ function createLineItem(
 
   const subItems = createSubItems(
     context,
-    `1x ${name} | je ${price.toFixed(2)} ${currency}\n`,
+    planningHelperName
+      ? undefined
+      : `1x ${name} | je ${price.toFixed(2)} ${currency}\n`,
     includeDescription,
   );
   return [
