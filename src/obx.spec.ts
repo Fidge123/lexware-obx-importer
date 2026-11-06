@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { DOMParser } from "@xmldom/xmldom";
 import * as XLSX from "xlsx";
@@ -13,6 +14,15 @@ const utf8 = { encoding: "utf-8" } as const;
 const address = { name: "Testkunde", countryCode: "DE" };
 
 const x = xpath as unknown as XPathEvaluator;
+
+// CI must fail instead of skipping when the R2 download breaks.
+const hasFixtures = existsSync("examples") || Boolean(process.env.CI);
+if (!hasFixtures) {
+  console.warn(
+    "Skipping OBX fixture tests: examples/ is missing, run `bun run download:r2` to fetch it.",
+  );
+}
+const fixtureTest = hasFixtures ? test : test.skip;
 
 async function loadNonDiscountedArtNrs(): Promise<Set<string>> {
   try {
@@ -48,9 +58,11 @@ async function loadNonDiscountedArtNrs(): Promise<Set<string>> {
   }
 }
 
-const nonDiscountedSet = await loadNonDiscountedArtNrs();
+const nonDiscountedSet = hasFixtures
+  ? await loadNonDiscountedArtNrs()
+  : new Set<string>();
 
-test("generate valid json for simple obx 1", async () => {
+fixtureTest("generate valid json for simple obx 1", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/01.obx", utf8);
   const short = await readFile("examples/01-short.json", utf8);
@@ -71,7 +83,7 @@ test("generate valid json for simple obx 1", async () => {
   ).toEqual(JSON.parse(long).lineItems);
 });
 
-test("generate valid json for another obx 2", async () => {
+fixtureTest("generate valid json for another obx 2", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/02.obx", utf8);
   const short = await readFile("examples/02-short.json", utf8);
@@ -92,7 +104,7 @@ test("generate valid json for another obx 2", async () => {
   ).toEqual(JSON.parse(long).lineItems);
 });
 
-test("generate valid json for complex obx 3", async () => {
+fixtureTest("generate valid json for complex obx 3", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/03.obx", utf8);
   const short = await readFile("examples/03-short.json", utf8);
@@ -112,7 +124,7 @@ test("generate valid json for complex obx 3", async () => {
   ).toEqual(JSON.parse(long).lineItems);
 });
 
-test("generate valid json for another complex obx 4", async () => {
+fixtureTest("generate valid json for another complex obx 4", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/04.obx", utf8);
   const short = await readFile("examples/04-short.json", utf8);
@@ -132,7 +144,7 @@ test("generate valid json for another complex obx 4", async () => {
   ).toEqual(JSON.parse(long).lineItems);
 });
 
-test("generate valid json for another complex obx 5", async () => {
+fixtureTest("generate valid json for another complex obx 5", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/05.obx", utf8);
   const short = await readFile("examples/05-short.json", utf8);
@@ -152,7 +164,7 @@ test("generate valid json for another complex obx 5", async () => {
   ).toEqual(JSON.parse(long).lineItems);
 });
 
-test("generate valid json for another complex obx 6", async () => {
+fixtureTest("generate valid json for another complex obx 6", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/06.obx", utf8);
   const short = await readFile("examples/06-short.json", utf8);
@@ -172,7 +184,7 @@ test("generate valid json for another complex obx 6", async () => {
   ).toEqual(JSON.parse(long).lineItems);
 });
 
-test("generate valid json for another complex obx 7", async () => {
+fixtureTest("generate valid json for another complex obx 7", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/07.obx", utf8);
   const short = await readFile("examples/07-short.json", utf8);
@@ -192,7 +204,7 @@ test("generate valid json for another complex obx 7", async () => {
   ).toEqual(JSON.parse(long).lineItems);
 });
 
-test("generate ungrouped json for obx 7", async () => {
+fixtureTest("generate ungrouped json for obx 7", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/07.obx", utf8);
   const short = await readFile("examples/07-short-ungrouped.json", utf8);
@@ -232,45 +244,48 @@ test("generate ungrouped json for obx 7", async () => {
   ).toEqual(count(JSON.parse(longGrouped).lineItems));
 });
 
-test("generate valid json for another complex obx 7 with increased prices", async () => {
-  const parser = new DOMParser();
-  const obx = await readFile("examples/07.obx", utf8);
-  const short = JSON.parse(
-    await readFile("examples/07-short.json", utf8),
-  ) as Quotation;
-  const short5 = await readFile("examples/07-short-plus-five.json", utf8);
-  const long5 = await readFile("examples/07-long-plus-five.json", utf8);
-  const parsed = parser.parseFromString(
-    obx,
-    "application/xml",
-  ) as unknown as Document;
+fixtureTest(
+  "generate valid json for another complex obx 7 with increased prices",
+  async () => {
+    const parser = new DOMParser();
+    const obx = await readFile("examples/07.obx", utf8);
+    const short = JSON.parse(
+      await readFile("examples/07-short.json", utf8),
+    ) as Quotation;
+    const short5 = await readFile("examples/07-short-plus-five.json", utf8);
+    const long5 = await readFile("examples/07-long-plus-five.json", utf8);
+    const parsed = parser.parseFromString(
+      obx,
+      "application/xml",
+    ) as unknown as Document;
 
-  expect.assertions(71);
-  expect(
-    createPayload(parsed, 1.05, false, true, address, x, nonDiscountedSet)
-      .lineItems,
-  ).toEqual(JSON.parse(short5).lineItems);
-  expect(
-    createPayload(parsed, 1.05, true, true, address, x, nonDiscountedSet)
-      .lineItems,
-  ).toEqual(JSON.parse(long5).lineItems);
+    expect.assertions(71);
+    expect(
+      createPayload(parsed, 1.05, false, true, address, x, nonDiscountedSet)
+        .lineItems,
+    ).toEqual(JSON.parse(short5).lineItems);
+    expect(
+      createPayload(parsed, 1.05, true, true, address, x, nonDiscountedSet)
+        .lineItems,
+    ).toEqual(JSON.parse(long5).lineItems);
 
-  for (const [i, item] of (
-    createPayload(parsed, 1.05, false, true, address, x, nonDiscountedSet)
-      .lineItems as CustomLineItem[]
-  ).entries()) {
-    if (item.name !== "Frachtkosten und Verbringung") {
-      expect(
-        Math.abs(
-          item.unitPrice.netAmount -
-            (short.lineItems[i] as CustomLineItem).unitPrice.netAmount * 1.05,
-        ),
-      ).toBeLessThan(0.008);
+    for (const [i, item] of (
+      createPayload(parsed, 1.05, false, true, address, x, nonDiscountedSet)
+        .lineItems as CustomLineItem[]
+    ).entries()) {
+      if (item.name !== "Frachtkosten und Verbringung") {
+        expect(
+          Math.abs(
+            item.unitPrice.netAmount -
+              (short.lineItems[i] as CustomLineItem).unitPrice.netAmount * 1.05,
+          ),
+        ).toBeLessThan(0.008);
+      }
     }
-  }
-});
+  },
+);
 
-test("generate valid json for another complex obx 7", async () => {
+fixtureTest("generate valid json for another complex obx 7", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/08.obx", utf8);
   const ungrouped = await readFile("examples/08-ungrouped.json", utf8);
@@ -290,7 +305,7 @@ test("generate valid json for another complex obx 7", async () => {
   ).toEqual(JSON.parse(grouped).lineItems);
 });
 
-test("generate valid json for multi-OBX project", async () => {
+fixtureTest("generate valid json for multi-OBX project", async () => {
   const parser = new DOMParser();
   const obx1 = await readFile("examples/01.obx", utf8);
   const obx2 = await readFile("examples/02.obx", utf8);
@@ -319,7 +334,7 @@ test("generate valid json for multi-OBX project", async () => {
   ).toEqual(result.lineItems);
 });
 
-test("mark items as non-discounted correctly", async () => {
+fixtureTest("mark items as non-discounted correctly", async () => {
   const parser = new DOMParser();
   const obx = await readFile("examples/01.obx", utf8);
   const parsed = parser.parseFromString(
@@ -360,57 +375,60 @@ test("mark items as non-discounted correctly", async () => {
   expect(item3.hasNonDiscountedSubItems).toBe(false);
 });
 
-test("use obx or price list prices for obx 9 with missing prices", async () => {
-  const parser = new DOMParser();
-  const obx = await readFile("examples/09.obx", utf8);
-  const { nonDiscountedArtNrs, prices } = parsePriceList(
-    await readFile(
-      "examples/2026-07-10 FB Preisliste_EXPLORIS_2026_SEUR_DE.xlsx",
-    ),
-  );
-  const obxPrices = JSON.parse(
-    await readFile("examples/09-obx-prices.json", utf8),
-  );
-  const listPrices = JSON.parse(
-    await readFile("examples/09-price-list.json", utf8),
-  );
-  const parsed = parser.parseFromString(
-    obx,
-    "application/xml",
-  ) as unknown as Document;
-  const nonDiscounted = new Set(nonDiscountedArtNrs);
-  const priceList = new Map(Object.entries(prices));
+fixtureTest(
+  "use obx or price list prices for obx 9 with missing prices",
+  async () => {
+    const parser = new DOMParser();
+    const obx = await readFile("examples/09.obx", utf8);
+    const { nonDiscountedArtNrs, prices } = parsePriceList(
+      await readFile(
+        "examples/2026-07-10 FB Preisliste_EXPLORIS_2026_SEUR_DE.xlsx",
+      ),
+    );
+    const obxPrices = JSON.parse(
+      await readFile("examples/09-obx-prices.json", utf8),
+    );
+    const listPrices = JSON.parse(
+      await readFile("examples/09-price-list.json", utf8),
+    );
+    const parsed = parser.parseFromString(
+      obx,
+      "application/xml",
+    ) as unknown as Document;
+    const nonDiscounted = new Set(nonDiscountedArtNrs);
+    const priceList = new Map(Object.entries(prices));
 
-  // 579-00046 has value='NaN' in 09.obx
-  expect(
-    findPriceMismatches(parsed, priceList, x).map((m) => m.artNr),
-  ).toContain("579-00046");
+    // 579-00046 has value='NaN' in 09.obx
+    expect(
+      findPriceMismatches(parsed, priceList, x).map((m) => m.artNr),
+    ).toContain("579-00046");
 
-  // Must match the app defaults the JSONs were created with
-  expect(
-    createPayload(
-      parsed,
-      1,
-      true,
-      true,
-      address,
-      x,
-      nonDiscounted,
-      priceList,
-      "obx",
-    ).lineItems,
-  ).toEqual(obxPrices.lineItems ?? obxPrices);
-  expect(
-    createPayload(
-      parsed,
-      1,
-      true,
-      true,
-      address,
-      x,
-      nonDiscounted,
-      priceList,
-      "priceList",
-    ).lineItems,
-  ).toEqual(listPrices.lineItems ?? listPrices);
-});
+    // Must match the app defaults the JSONs were created with
+    expect(
+      createPayload(
+        parsed,
+        1,
+        true,
+        true,
+        address,
+        x,
+        nonDiscounted,
+        priceList,
+        "obx",
+      ).lineItems,
+    ).toEqual(obxPrices.lineItems ?? obxPrices);
+    expect(
+      createPayload(
+        parsed,
+        1,
+        true,
+        true,
+        address,
+        x,
+        nonDiscounted,
+        priceList,
+        "priceList",
+      ).lineItems,
+    ).toEqual(listPrices.lineItems ?? listPrices);
+  },
+);

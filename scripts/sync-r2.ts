@@ -7,7 +7,6 @@ import {
   getCurrentBranch,
   getLocalAndRemoteBranches,
   getR2Config,
-  type R2Config,
 } from "./r2-utils";
 
 type S3ListResponse = {
