@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.7/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.5/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
@@ -28,16 +28,6 @@
       "correctness": {
         "preset": "recommended"
       },
-      "nursery": {
-        "useSortedClasses": {
-          "fix": "safe",
-          "level": "warn",
-          "options": {
-            "attributes": ["classList"],
-            "functions": ["cn", "clsx", "cva", "tw"]
-          }
-        }
-      },
       "security": {
         "preset": "recommended"
       },
@@ -57,6 +47,9 @@
       "semicolons": "always",
       "arrowParentheses": "always"
     }
+  },
+  "tailwind": {
+    "stylesheet": "src/styles.css"
   },
   "overrides": [
     {
