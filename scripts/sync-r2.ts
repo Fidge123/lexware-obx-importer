@@ -7,7 +7,6 @@ import {
   getCurrentBranch,
   getLocalAndRemoteBranches,
   getR2Config,
-  getR2Endpoint,
   type R2Config,
 } from "./r2-utils";
 
@@ -16,8 +15,7 @@ type S3ListResponse = {
 };
 
 async function uploadExamples(branch: string): Promise<void> {
-  const config = getR2Config();
-  const endpoint = getR2Endpoint(config.accountId);
+  const s3 = createS3Client(getR2Config());
 
   console.log(`📤 Syncing examples to R2 for branch: ${branch}`);
 
@@ -40,40 +38,21 @@ async function uploadExamples(branch: string): Promise<void> {
     const key = `${branch}/${filename}`;
 
     try {
-      const content = await file.arrayBuffer();
-      const contentBuffer = Buffer.from(content);
-
       const hasher = new Bun.CryptoHasher("md5");
-      hasher.update(contentBuffer);
-      const localHash = hasher.digest("base64");
+      hasher.update(await file.arrayBuffer());
+      const localHash = hasher.digest("hex");
 
-      let shouldUpload = true;
-      try {
-        const headResponse = await fetch(
-          `${endpoint}/${config.bucketName}/${key}`,
-          {
-            method: "HEAD",
-            headers: {
-              Authorization: `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}`,
-            },
-          },
-        );
+      const remoteEtag = await s3
+        .stat(key)
+        .then((stats) => stats.etag.replace(/"/g, ""))
+        .catch(() => undefined);
 
-        if (headResponse.ok) {
-          const etag = headResponse.headers.get("etag")?.replace(/"/g, "");
-          if (etag === localHash) {
-            shouldUpload = false;
-          }
-        }
-      } catch {}
-
-      if (!shouldUpload) {
+      if (remoteEtag === localHash) {
         console.log(`✓ ${filename} (unchanged)`);
         skippedCount++;
         continue;
       }
 
-      const s3 = createS3Client(config);
       await s3.write(key, file);
       console.log(`✓ ${filename} (uploaded)`);
       uploadedCount++;
