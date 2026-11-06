@@ -20,8 +20,15 @@ import { DropZone } from "./components/form/DropZone.tsx";
 import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
 import { NonDiscountedWarningDialog } from "./components/NonDiscountedWarningDialog.tsx";
+import { PriceMismatchDialog } from "./components/PriceMismatchDialog.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
-import { computeShippingInputs, createPayload } from "./obx.ts";
+import {
+  computeShippingInputs,
+  createPayload,
+  findPriceMismatches,
+  type PriceMismatch,
+  type PriceSource,
+} from "./obx.ts";
 import type { Address, CustomLineItem, LineItem, Quotation } from "./types.ts";
 import { money } from "./util.ts";
 
@@ -59,6 +66,10 @@ export default function App() {
   const [nonDiscountedArtNrs, setNonDiscountedArtNrs] = useState<Set<string>>(
     new Set(),
   );
+  const [priceList, setPriceList] = useState<Map<string, number>>(new Map());
+  const [priceSource, setPriceSource] = useState<PriceSource>("obx");
+  const [priceMismatches, setPriceMismatches] = useState<PriceMismatch[]>([]);
+  const [priceDialogOpen, setPriceDialogOpen] = useState(false);
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
   const [nonDiscountedStats, setNonDiscountedStats] = useState({
     count: 0,
@@ -68,7 +79,6 @@ export default function App() {
   useEffect(() => {
     void getVersion().then(setVersion);
 
-    // Load non-discounted article numbers from localStorage
     const stored = localStorage.getItem("nonDiscountedArtNrs");
     if (stored) {
       try {
@@ -78,7 +88,28 @@ export default function App() {
         console.error("Error loading non-discounted article numbers:", error);
       }
     }
+
+    const storedPrices = localStorage.getItem("priceList");
+    if (storedPrices) {
+      try {
+        const prices = JSON.parse(storedPrices) as Record<string, number>;
+        setPriceList(new Map(Object.entries(prices)));
+      } catch (error) {
+        console.error("Error loading price list:", error);
+      }
+    }
   }, []);
+
+  useEffect(() => {
+    if (Object.keys(xmlDocs).length === 0) {
+      setPriceMismatches([]);
+      setPriceDialogOpen(false);
+      return;
+    }
+    const mismatches = findPriceMismatches(xmlDocs, priceList);
+    setPriceMismatches(mismatches);
+    setPriceDialogOpen(mismatches.length > 0);
+  }, [xmlDocs, priceList]);
 
   useEffect(() => {
     localStorage.setItem("grouping", String(grouping));
@@ -101,7 +132,6 @@ export default function App() {
 
     setNonDiscountedStats({ count, totalValue });
 
-    // Show warning dialog if there are non-discounted items
     if (count > 0) {
       setWarningDialogOpen(true);
     }
@@ -162,6 +192,8 @@ export default function App() {
         customer,
         undefined,
         nonDiscountedArtNrs,
+        priceList,
+        priceSource,
       );
 
       if (apiPrice !== null) {
@@ -181,6 +213,8 @@ export default function App() {
     description,
     customer,
     nonDiscountedArtNrs,
+    priceList,
+    priceSource,
     calculateNonDiscountedStats,
     getShippingCost,
   ]);
@@ -296,6 +330,7 @@ export default function App() {
         description={description}
         onDescriptionChange={setDescription}
         onNonDiscountedListChange={setNonDiscountedArtNrs}
+        onPriceListChange={setPriceList}
         kmUsername={kmUsername}
         onKmUsernameChange={(v) => {
           setKmUsername(v);
@@ -308,8 +343,17 @@ export default function App() {
         }}
       />
 
+      <PriceMismatchDialog
+        isOpen={priceDialogOpen}
+        mismatches={priceMismatches}
+        onChoose={(source) => {
+          setPriceSource(source);
+          setPriceDialogOpen(false);
+        }}
+      />
+
       <NonDiscountedWarningDialog
-        isOpen={warningDialogOpen}
+        isOpen={warningDialogOpen && !priceDialogOpen}
         onClose={() => setWarningDialogOpen(false)}
         onApplySurcharge={handleApplyNonDiscountedSurcharge}
         count={nonDiscountedStats.count}

@@ -1,8 +1,4 @@
-import {
-  Disclosure,
-  DisclosureButton,
-  DisclosurePanel,
-} from "@headlessui/react";
+import { Disclosure, DisclosureButton } from "@headlessui/react";
 import type {
   CustomLineItem,
   LineItem,
@@ -42,7 +38,6 @@ export function LineItemComponent({
     }
   };
 
-  // Check if item is non-discounted or has non-discounted sub-items
   const isCustomItem = (item: LineItem): item is CustomLineItem => {
     return "type" in item && item.type === "custom";
   };
@@ -72,13 +67,10 @@ export function LineItemComponent({
           <Disclosure>
             <DisclosureButton
               as="span"
-              className="mt-1 line-clamp-1 w-fit max-w-2xl text-left text-gray-500 text-sm hover:text-gray-800"
+              className="mt-1 line-clamp-1 w-fit max-w-2xl whitespace-pre-line text-left text-gray-500 text-sm hover:text-gray-800 data-open:line-clamp-none data-open:text-gray-800"
             >
               {item.description}
             </DisclosureButton>
-            <DisclosurePanel className="bg-inherit">
-              <div className="text-sm">{item.description}</div>
-            </DisclosurePanel>
           </Disclosure>
         )}
       </div>

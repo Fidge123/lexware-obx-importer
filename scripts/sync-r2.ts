@@ -7,7 +7,6 @@ import {
   getCurrentBranch,
   getLocalAndRemoteBranches,
   getR2Config,
-  getR2Endpoint,
   type R2Config,
 } from "./r2-utils";
 
@@ -16,8 +15,7 @@ type S3ListResponse = {
 };
 
 async function uploadExamples(branch: string): Promise<void> {
-  const config = getR2Config();
-  const endpoint = getR2Endpoint(config.accountId);
+  const s3 = createS3Client(getR2Config());
 
   console.log(`📤 Syncing examples to R2 for branch: ${branch}`);
 
@@ -40,46 +38,21 @@ async function uploadExamples(branch: string): Promise<void> {
     const key = `${branch}/${filename}`;
 
     try {
-      // Read file content
-      const content = await file.arrayBuffer();
-      const contentBuffer = Buffer.from(content);
-
-      // Calculate MD5 hash for comparison
       const hasher = new Bun.CryptoHasher("md5");
-      hasher.update(contentBuffer);
-      const localHash = hasher.digest("base64");
+      hasher.update(await file.arrayBuffer());
+      const localHash = hasher.digest("hex");
 
-      // Check if file exists in R2 and compare ETags
-      let shouldUpload = true;
-      try {
-        const headResponse = await fetch(
-          `${endpoint}/${config.bucketName}/${key}`,
-          {
-            method: "HEAD",
-            headers: {
-              Authorization: `AWS4-HMAC-SHA256 Credential=${config.accessKeyId}`,
-            },
-          },
-        );
+      const remoteEtag = await s3
+        .stat(key)
+        .then((stats) => stats.etag.replace(/^W\//, "").replace(/"/g, ""))
+        .catch(() => undefined);
 
-        if (headResponse.ok) {
-          const etag = headResponse.headers.get("etag")?.replace(/"/g, "");
-          if (etag === localHash) {
-            shouldUpload = false;
-          }
-        }
-      } catch {
-        // File doesn't exist, upload it
-      }
-
-      if (!shouldUpload) {
+      if (remoteEtag === localHash) {
         console.log(`✓ ${filename} (unchanged)`);
         skippedCount++;
         continue;
       }
 
-      // Upload to R2 using Bun's S3 support
-      const s3 = createS3Client(config);
       await s3.write(key, file);
       console.log(`✓ ${filename} (uploaded)`);
       uploadedCount++;
@@ -99,7 +72,6 @@ async function listR2Branches(): Promise<Map<string, Date>> {
   const branches = new Map<string, Date>();
 
   try {
-    // List all objects
     const response = await s3.list();
     const contents = response as unknown as S3ListResponse;
 
@@ -132,7 +104,6 @@ async function cleanupOldBranches(): Promise<void> {
   const r2Branches = await listR2Branches();
   const activeBranches = await getLocalAndRemoteBranches();
 
-  // Find orphaned branches
   const orphanedBranches: Array<{ name: string; lastModified: Date }> = [];
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -152,7 +123,6 @@ async function cleanupOldBranches(): Promise<void> {
     console.log(`  • ${name} (last modified: ${lastModified.toISOString()})`);
   }
 
-  // Prompt for confirmation
   console.log("\n⚠️  Do you want to delete these branches from R2? (yes/no): ");
   const confirmation = prompt();
 
@@ -161,14 +131,12 @@ async function cleanupOldBranches(): Promise<void> {
     return;
   }
 
-  // Delete orphaned branches
   const s3 = createS3Client(config);
 
   for (const { name } of orphanedBranches) {
     console.log(`\n🗑️  Deleting branch: ${name}`);
 
     try {
-      // List all objects with this prefix
       const response = await s3.list({ prefix: `${name}/` });
       const contents = response as unknown as S3ListResponse;
 
@@ -190,7 +158,6 @@ async function cleanupOldBranches(): Promise<void> {
   console.log("\n✅ Cleanup complete");
 }
 
-// Main execution
 async function main() {
   const command = process.argv[2];
 

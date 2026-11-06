@@ -6,8 +6,8 @@ import {
 } from "@headlessui/react";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
-import * as XLSX from "xlsx";
 import { kmLogin } from "../api.ts";
+import { parsePriceList } from "../priceList.ts";
 import { ApiKeyInput } from "./form/ApiKeyInput.tsx";
 import { DescriptionToggle } from "./form/DescriptionToggle.tsx";
 import { GroupingToggle } from "./form/GroupingToggle.tsx";
@@ -21,6 +21,7 @@ export function SettingsModal({
   description,
   onDescriptionChange,
   onNonDiscountedListChange,
+  onPriceListChange,
   kmUsername,
   onKmUsernameChange,
   kmPassword,
@@ -67,47 +68,25 @@ export function SettingsModal({
     if (!file) return;
 
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<{
-        __EMPTY?: string;
-        __EMPTY_2?: string;
-      }>(firstSheet, { header: 1 });
+      const { nonDiscountedArtNrs, prices } = parsePriceList(
+        await file.arrayBuffer(),
+      );
 
-      // Extract artNr from column A where column C contains "Netto" (case-insensitive)
-      const nonDiscountedArtNrs: string[] = [];
-      for (const row of data as unknown[][]) {
-        const artNr = row[0]; // Column A (index 0)
-        const columnC = row[2]; // Column C (index 2)
-
-        if (
-          artNr &&
-          typeof artNr === "string" &&
-          columnC &&
-          typeof columnC === "string" &&
-          columnC.toLowerCase().includes("netto")
-        ) {
-          nonDiscountedArtNrs.push(artNr.trim());
-        }
-      }
-
-      // Store in localStorage
       localStorage.setItem(
         "nonDiscountedArtNrs",
         JSON.stringify(nonDiscountedArtNrs),
       );
+      localStorage.setItem("priceList", JSON.stringify(prices));
       localStorage.setItem("nonDiscountedFileName", file.name);
       setXlsxFileName(file.name);
 
-      // Notify parent component
       onNonDiscountedListChange(new Set(nonDiscountedArtNrs));
+      onPriceListChange(new Map(Object.entries(prices)));
     } catch (error) {
       console.error("Error parsing xlsx file:", error);
       alert("Fehler beim Laden der Excel-Datei.");
     }
 
-    // Reset input
     event.target.value = "";
   };
   return (
@@ -256,6 +235,7 @@ interface Props {
   description: boolean;
   onDescriptionChange: (value: boolean) => void;
   onNonDiscountedListChange: (artNrs: Set<string>) => void;
+  onPriceListChange: (prices: Map<string, number>) => void;
   kmUsername: string;
   onKmUsernameChange: (value: string) => void;
   kmPassword: string;

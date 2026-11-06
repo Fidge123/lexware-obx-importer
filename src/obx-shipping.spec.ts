@@ -72,7 +72,6 @@ test("computeShippingInputs total volume drives the shipping cost approximation"
   const totalWeight = weights.filter(Boolean).reduce((s, w) => s + w, 0);
   expect(totalVolume).toBeCloseTo(2.5);
   expect(totalWeight).toBeCloseTo(25.0);
-  // ceil(2.5)=3, 3*140=420, max(420,200)=420
   expect(Math.max(Math.ceil(totalVolume) * 140, 200)).toBe(420);
 });
 
@@ -86,6 +85,6 @@ test("computeShippingInputs minimum shipping cost for small volume", () => {
 
   const { volumes } = computeShippingInputs(doc, x);
   const totalVolume = volumes.filter(Boolean).reduce((s, v) => s + v, 0);
-  // ceil(0.5)=1, 1*140=140, max(140,200)=200 → minimum applies
+  // Minimum charge applies
   expect(Math.max(Math.ceil(totalVolume) * 140, 200)).toBe(200);
 });

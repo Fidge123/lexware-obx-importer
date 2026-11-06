@@ -4,7 +4,7 @@ This software allows you to import pCon OBX files as lexware office quotations.
 
 ## CloudFlare R2 Test File Sync
 
-This project uses CloudFlare R2 to store and sync test example files across branches. 
+This project uses CloudFlare R2 to store and sync test example files across branches.
 Test files in the `examples/` directory are automatically synced to R2 with branch-based versioning.
 
 ### Configuration

@@ -48,14 +48,12 @@ export async function getLocalAndRemoteBranches(): Promise<Set<string>> {
   // Interpolated so Bun Shell doesn't try to parse the parentheses as syntax
   const format = "%(refname:short)";
 
-  // Get local branches
   const localBranches = await $`git branch --format=${format}`.text();
   for (const branch of localBranches.split("\n")) {
     const trimmed = branch.trim();
     if (trimmed) branches.add(trimmed);
   }
 
-  // Get remote branches (strip "origin/" prefix)
   const remoteBranches = await $`git branch -r --format=${format}`.text();
   for (const branch of remoteBranches.split("\n")) {
     const trimmed = branch.trim();

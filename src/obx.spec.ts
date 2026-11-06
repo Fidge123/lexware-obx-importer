@@ -4,7 +4,8 @@ import { DOMParser } from "@xmldom/xmldom";
 import * as XLSX from "xlsx";
 import xpath from "xpath";
 
-import { createPayload } from "./obx.ts";
+import { createPayload, findPriceMismatches } from "./obx.ts";
+import { parsePriceList } from "./priceList.ts";
 import type { CustomLineItem, LineItemWithType, Quotation } from "./types.ts";
 import { count } from "./util.ts";
 
@@ -13,7 +14,6 @@ const address = { name: "Testkunde", countryCode: "DE" };
 
 const x = xpath as unknown as XPathEvaluator;
 
-// Load non-discounted article numbers from xlsx file
 async function loadNonDiscountedArtNrs(): Promise<Set<string>> {
   try {
     const buffer = await readFile(
@@ -27,8 +27,8 @@ async function loadNonDiscountedArtNrs(): Promise<Set<string>> {
 
     const nonDiscountedArtNrs: string[] = [];
     for (const row of data) {
-      const artNr = row[0]; // Column A (index 0)
-      const columnC = row[2]; // Column C (index 2)
+      const artNr = row[0];
+      const columnC = row[2];
 
       if (
         artNr &&
@@ -327,7 +327,6 @@ test("mark items as non-discounted correctly", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  // Create a set with some non-discounted article numbers
   const nonDiscounted = new Set(["502-00039", "377-00008"]);
   const payload = createPayload(
     parsed,
@@ -339,7 +338,6 @@ test("mark items as non-discounted correctly", async () => {
     nonDiscounted,
   );
 
-  // Find the items with these article numbers
   const item1 = payload.lineItems.find(
     (item) => "artNr" in item && item.artNr === "502-00039",
   ) as CustomLineItem;
@@ -350,7 +348,6 @@ test("mark items as non-discounted correctly", async () => {
     (item) => "artNr" in item && item.artNr === "550-00013",
   ) as CustomLineItem;
 
-  // Check that non-discounted items are marked correctly
   expect(item1).toBeDefined();
   expect(item1.isNonDiscounted).toBe(true);
   expect(item1.hasNonDiscountedSubItems).toBe(false);
@@ -358,8 +355,62 @@ test("mark items as non-discounted correctly", async () => {
   expect(item2.isNonDiscounted).toBe(true);
   expect(item2.hasNonDiscountedSubItems).toBe(false);
 
-  // Check that discounted items are not marked
   expect(item3).toBeDefined();
   expect(item3.isNonDiscounted).toBe(false);
   expect(item3.hasNonDiscountedSubItems).toBe(false);
+});
+
+test("use obx or price list prices for obx 9 with missing prices", async () => {
+  const parser = new DOMParser();
+  const obx = await readFile("examples/09.obx", utf8);
+  const { nonDiscountedArtNrs, prices } = parsePriceList(
+    await readFile(
+      "examples/2026-07-10 FB Preisliste_EXPLORIS_2026_SEUR_DE.xlsx",
+    ),
+  );
+  const obxPrices = JSON.parse(
+    await readFile("examples/09-obx-prices.json", utf8),
+  );
+  const listPrices = JSON.parse(
+    await readFile("examples/09-price-list.json", utf8),
+  );
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
+  const nonDiscounted = new Set(nonDiscountedArtNrs);
+  const priceList = new Map(Object.entries(prices));
+
+  // 579-00046 has value='NaN' in 09.obx
+  expect(
+    findPriceMismatches(parsed, priceList, x).map((m) => m.artNr),
+  ).toContain("579-00046");
+
+  // Must match the app defaults the JSONs were created with
+  expect(
+    createPayload(
+      parsed,
+      1,
+      true,
+      true,
+      address,
+      x,
+      nonDiscounted,
+      priceList,
+      "obx",
+    ).lineItems,
+  ).toEqual(obxPrices.lineItems ?? obxPrices);
+  expect(
+    createPayload(
+      parsed,
+      1,
+      true,
+      true,
+      address,
+      x,
+      nonDiscounted,
+      priceList,
+      "priceList",
+    ).lineItems,
+  ).toEqual(listPrices.lineItems ?? listPrices);
 });
