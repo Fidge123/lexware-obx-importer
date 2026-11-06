@@ -101,8 +101,6 @@ export default function App() {
     }
   }, []);
 
-  // Compare the prices of all loaded files against the price list whenever
-  // files are added/removed or a new price list is loaded.
   useEffect(() => {
     if (Object.keys(xmlDocs).length === 0) {
       setPriceMismatches([]);

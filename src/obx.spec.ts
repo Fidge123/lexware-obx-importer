@@ -386,12 +386,12 @@ test("use obx or price list prices for obx 9 with missing prices", async () => {
   const nonDiscounted = new Set(nonDiscountedArtNrs);
   const priceList = new Map(Object.entries(prices));
 
-  // 579-00046 has no price (value='NaN') in the obx file
+  // 579-00046 has value='NaN' in 09.obx
   expect(
     findPriceMismatches(parsed, priceList, x).map((m) => m.artNr),
   ).toContain("579-00046");
 
-  // Defaults of the app: with description, grouped
+  // Must match the app defaults the JSONs were created with
   expect(
     createPayload(
       parsed,

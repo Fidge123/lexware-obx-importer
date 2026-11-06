@@ -29,7 +29,6 @@ function article(
   </bskArticle>`;
 }
 
-// Mirrors newer obx files where some sub-articles have no price ("NaN").
 function document(): Document {
   return parseXml(`<cutBuffer><items>
     ${article(
@@ -107,7 +106,7 @@ test("price list prices replace obx prices when chosen", () => {
     "priceList",
   );
   const table = lineItems[0] as CustomLineItem;
-  // 550-00015 is not in the price list, so its obx price is kept.
+  // 550-00015 is not in the price list
   expect(table.unitPrice.netAmount).toBe(
     Math.round((1409.4 + 1408 + 275) * 1.1 * 100) / 100,
   );

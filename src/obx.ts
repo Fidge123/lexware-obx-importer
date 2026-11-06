@@ -26,7 +26,6 @@ export type PriceSource = "obx" | "priceList";
 export interface PriceMismatch {
   artNr: string;
   name: string;
-  /** Price from the obx file, `null` when the file contains no valid price. */
   obxPrice: number | null;
   listPrice: number;
 }
@@ -375,11 +374,6 @@ export function computeShippingInputs(
   };
 }
 
-/**
- * Compares the prices of all articles (including sub-articles) in the given
- * documents against the price list. Articles missing from the price list are
- * ignored. Every article number is reported at most once.
- */
 export function findPriceMismatches(
   parsed: Document | Record<string, Document>,
   priceListMap: Map<string, number>,
