@@ -6,8 +6,8 @@ import {
 } from "@headlessui/react";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
-import * as XLSX from "xlsx";
 import { kmLogin } from "../api.ts";
+import { parsePriceList } from "../priceList.ts";
 import { ApiKeyInput } from "./form/ApiKeyInput.tsx";
 import { DescriptionToggle } from "./form/DescriptionToggle.tsx";
 import { GroupingToggle } from "./form/GroupingToggle.tsx";
@@ -68,38 +68,9 @@ export function SettingsModal({
     if (!file) return;
 
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer);
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<{
-        __EMPTY?: string;
-        __EMPTY_2?: string;
-      }>(firstSheet, { header: 1 });
-
-      // Extract artNr from column A where column C contains "Netto" (case-insensitive)
-      // Extract list prices from column B for every artNr in column A
-      const nonDiscountedArtNrs: string[] = [];
-      const prices: Record<string, number> = {};
-      for (const row of data as unknown[][]) {
-        const artNr = row[0]; // Column A (index 0)
-        const columnB = row[1]; // Column B (index 1)
-        const columnC = row[2]; // Column C (index 2)
-
-        const listPrice = parsePrice(columnB);
-        if (artNr && typeof artNr === "string" && listPrice !== null) {
-          prices[artNr.trim()] = listPrice;
-        }
-
-        if (
-          artNr &&
-          typeof artNr === "string" &&
-          columnC &&
-          typeof columnC === "string" &&
-          columnC.toLowerCase().includes("netto")
-        ) {
-          nonDiscountedArtNrs.push(artNr.trim());
-        }
-      }
+      const { nonDiscountedArtNrs, prices } = parsePriceList(
+        await file.arrayBuffer(),
+      );
 
       // Store in localStorage
       localStorage.setItem(
@@ -256,21 +227,6 @@ export function SettingsModal({
       </div>
     </Dialog>
   );
-}
-
-function parsePrice(value: unknown): number | null {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null;
-  }
-  if (typeof value === "string" && value.trim() !== "") {
-    const str = value.trim();
-    // German number format ("1.234,56") when a decimal comma is present
-    const parsed = Number(
-      str.includes(",") ? str.replace(/\./g, "").replace(",", ".") : str,
-    );
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
 }
 
 interface Props {

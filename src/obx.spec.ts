@@ -4,7 +4,8 @@ import { DOMParser } from "@xmldom/xmldom";
 import * as XLSX from "xlsx";
 import xpath from "xpath";
 
-import { createPayload } from "./obx.ts";
+import { createPayload, findPriceMismatches } from "./obx.ts";
+import { parsePriceList } from "./priceList.ts";
 import type { CustomLineItem, LineItemWithType, Quotation } from "./types.ts";
 import { count } from "./util.ts";
 
@@ -362,4 +363,59 @@ test("mark items as non-discounted correctly", async () => {
   expect(item3).toBeDefined();
   expect(item3.isNonDiscounted).toBe(false);
   expect(item3.hasNonDiscountedSubItems).toBe(false);
+});
+
+test("use obx or price list prices for obx 9 with missing prices", async () => {
+  const parser = new DOMParser();
+  const obx = await readFile("examples/09.obx", utf8);
+  const { nonDiscountedArtNrs, prices } = parsePriceList(
+    await readFile(
+      "examples/2026-07-10 FB Preisliste_EXPLORIS_2026_SEUR_DE.xlsx",
+    ),
+  );
+  const obxPrices = JSON.parse(
+    await readFile("examples/09-obx-prices.json", utf8),
+  );
+  const listPrices = JSON.parse(
+    await readFile("examples/09-price-list.json", utf8),
+  );
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
+  const nonDiscounted = new Set(nonDiscountedArtNrs);
+  const priceList = new Map(Object.entries(prices));
+
+  // 579-00046 has no price (value='NaN') in the obx file
+  expect(
+    findPriceMismatches(parsed, priceList, x).map((m) => m.artNr),
+  ).toContain("579-00046");
+
+  // Defaults of the app: with description, grouped
+  expect(
+    createPayload(
+      parsed,
+      1,
+      true,
+      true,
+      address,
+      x,
+      nonDiscounted,
+      priceList,
+      "obx",
+    ).lineItems,
+  ).toEqual(obxPrices.lineItems ?? obxPrices);
+  expect(
+    createPayload(
+      parsed,
+      1,
+      true,
+      true,
+      address,
+      x,
+      nonDiscounted,
+      priceList,
+      "priceList",
+    ).lineItems,
+  ).toEqual(listPrices.lineItems ?? listPrices);
 });
