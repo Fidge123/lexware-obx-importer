@@ -18,6 +18,18 @@ const planningHelpers = new Map([
 let evaluator: XPathEvaluator;
 let multiplier: number;
 let nonDiscountedArtNrs: Set<string>;
+let priceList: Map<string, number>;
+let priceSource: PriceSource;
+
+export type PriceSource = "obx" | "priceList";
+
+export interface PriceMismatch {
+  artNr: string;
+  name: string;
+  /** Price from the obx file, `null` when the file contains no valid price. */
+  obxPrice: number | null;
+  listPrice: number;
+}
 
 function iterate(xpathResult: XPathResult): Node[] {
   const array: Node[] = [];
@@ -40,9 +52,20 @@ function getString(xpath: string, context: Node): string | undefined {
   return content?.replace(/\t/g, "").trim();
 }
 
-function getNumber(xpath: string, context: Node): number {
-  const str = getString(xpath, context) ?? "0";
-  return money(parseFloat(str.replace(",", ".")));
+function getObxPrice(node: Node): number | null {
+  const str = getString("./itemPrice[@type='sale'][@pd='1']/@value", node);
+  if (str === undefined || str === "") {
+    return null;
+  }
+  const value = parseFloat(str.replace(",", "."));
+  return Number.isFinite(value) ? money(value) : null;
+}
+
+function getItemPrice(node: Node): number {
+  const artNr = getString("./artNr[@type='final']", node);
+  const listPrice =
+    priceSource === "priceList" && artNr ? priceList.get(artNr) : undefined;
+  return listPrice ?? getObxPrice(node) ?? 0;
 }
 
 function getPos(room: Node): [string, Node][] {
@@ -79,10 +102,7 @@ function createSubItems(
           node,
         )} | ${getString(`./artNr[@type='final']`, node)}`,
         unitPrice: {
-          netAmount: getNumber(
-            `./itemPrice[@type='sale'][@pd='1']/@value`,
-            node,
-          ),
+          netAmount: getItemPrice(node),
         },
         description:
           getString(`./description[@type='features']/text[@lang='de']`, node) ||
@@ -146,9 +166,7 @@ function createLineItem(
     artNr +
       " | " +
       getString("./description[@type='short']/text[@lang='de']", context);
-  const price =
-    getNumber("./itemPrice[@type='sale'][@pd='1']/@value", context) *
-    multiplier;
+  const price = getItemPrice(context) * multiplier;
   const currency =
     getString("./itemPrice[@type='sale'][@pd='1']/@currency", context) ?? "EUR";
 
@@ -187,12 +205,8 @@ function createLineItem(
         currency: currency,
         netAmount: money(
           price +
-            get(
-              `.//bskArticle/itemPrice[@type='sale'][@pd='1']/@value`,
-              context,
-            ).reduce(
-              (sum, curr) =>
-                sum + parseFloat(curr?.textContent ?? "0") * multiplier,
+            subArticleNodes.reduce(
+              (sum, node) => sum + getItemPrice(node) * multiplier,
               0,
             ),
         ),
@@ -361,6 +375,55 @@ export function computeShippingInputs(
   };
 }
 
+/**
+ * Compares the prices of all articles (including sub-articles) in the given
+ * documents against the price list. Articles missing from the price list are
+ * ignored. Every article number is reported at most once.
+ */
+export function findPriceMismatches(
+  parsed: Document | Record<string, Document>,
+  priceListMap: Map<string, number>,
+  xpath: XPathEvaluator = new XPathEvaluator(),
+): PriceMismatch[] {
+  evaluator = xpath;
+  if (priceListMap.size === 0) {
+    return [];
+  }
+
+  const docs =
+    "documentElement" in parsed
+      ? [parsed as Document]
+      : Object.values(parsed as Record<string, Document>);
+  const mismatches = new Map<string, PriceMismatch>();
+
+  for (const doc of docs) {
+    for (const node of get("//bskArticle", doc)) {
+      const artNr = getString("./artNr[@type='final']", node);
+      if (!artNr || mismatches.has(artNr)) {
+        continue;
+      }
+      const listPrice = priceListMap.get(artNr);
+      if (listPrice === undefined) {
+        continue;
+      }
+      const obxPrice = getObxPrice(node);
+      if (obxPrice !== null && Math.abs(obxPrice - listPrice) < 0.005) {
+        continue;
+      }
+      mismatches.set(artNr, {
+        artNr,
+        name:
+          getString("./description[@type='short']/text[@lang='de']", node) ??
+          "",
+        obxPrice,
+        listPrice,
+      });
+    }
+  }
+
+  return [...mismatches.values()];
+}
+
 export function createPayload(
   parsed: Document | Record<string, Document>,
   multiplierValue: number,
@@ -369,10 +432,14 @@ export function createPayload(
   address: Address = { name: "Testkunde", countryCode: "DE" },
   xpath: XPathEvaluator = new XPathEvaluator(),
   nonDiscountedSet: Set<string> = new Set(),
+  priceListMap: Map<string, number> = new Map(),
+  priceSourceValue: PriceSource = "obx",
 ): Quotation {
   evaluator = xpath;
   multiplier = Number.isNaN(multiplierValue) ? 1 : multiplierValue;
   nonDiscountedArtNrs = nonDiscountedSet;
+  priceList = priceListMap;
+  priceSource = priceSourceValue;
 
   const now = new Date();
   const expiration = new Date(
