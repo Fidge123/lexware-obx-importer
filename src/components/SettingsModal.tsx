@@ -21,6 +21,7 @@ export function SettingsModal({
   description,
   onDescriptionChange,
   onNonDiscountedListChange,
+  onPriceListChange,
   kmUsername,
   onKmUsernameChange,
   kmPassword,
@@ -76,10 +77,18 @@ export function SettingsModal({
       }>(firstSheet, { header: 1 });
 
       // Extract artNr from column A where column C contains "Netto" (case-insensitive)
+      // Extract list prices from column B for every artNr in column A
       const nonDiscountedArtNrs: string[] = [];
+      const prices: Record<string, number> = {};
       for (const row of data as unknown[][]) {
         const artNr = row[0]; // Column A (index 0)
+        const columnB = row[1]; // Column B (index 1)
         const columnC = row[2]; // Column C (index 2)
+
+        const listPrice = parsePrice(columnB);
+        if (artNr && typeof artNr === "string" && listPrice !== null) {
+          prices[artNr.trim()] = listPrice;
+        }
 
         if (
           artNr &&
@@ -97,11 +106,13 @@ export function SettingsModal({
         "nonDiscountedArtNrs",
         JSON.stringify(nonDiscountedArtNrs),
       );
+      localStorage.setItem("priceList", JSON.stringify(prices));
       localStorage.setItem("nonDiscountedFileName", file.name);
       setXlsxFileName(file.name);
 
       // Notify parent component
       onNonDiscountedListChange(new Set(nonDiscountedArtNrs));
+      onPriceListChange(new Map(Object.entries(prices)));
     } catch (error) {
       console.error("Error parsing xlsx file:", error);
       alert("Fehler beim Laden der Excel-Datei.");
@@ -247,6 +258,21 @@ export function SettingsModal({
   );
 }
 
+function parsePrice(value: unknown): number | null {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const str = value.trim();
+    // German number format ("1.234,56") when a decimal comma is present
+    const parsed = Number(
+      str.includes(",") ? str.replace(/\./g, "").replace(",", ".") : str,
+    );
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -256,6 +282,7 @@ interface Props {
   description: boolean;
   onDescriptionChange: (value: boolean) => void;
   onNonDiscountedListChange: (artNrs: Set<string>) => void;
+  onPriceListChange: (prices: Map<string, number>) => void;
   kmUsername: string;
   onKmUsernameChange: (value: string) => void;
   kmPassword: string;
