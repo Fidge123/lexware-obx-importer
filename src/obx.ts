@@ -8,9 +8,7 @@ import type {
 } from "./types";
 import { money } from "./util.ts";
 
-// Articles whose artNr[@type='final'] is a planning keyword instead of an
-// article number (e.g. "TEILPLANNUNG_TP | Planungshilfe Tischplatten"), mapped
-// to the name that should be shown to the customer.
+// Planning helpers have a keyword instead of an article number as artNr.
 const planningHelpers = new Map([
   ["TEILPLANNUNG_TP", "Tischplatte individuell"],
 ]);
@@ -121,7 +119,6 @@ function createSubItems(
     return [];
   }
 
-  // Planning helpers are listed without their own line, only their children.
   const subItems = parent ? [parent, ...children] : children;
 
   if (subItems.join("\n").length >= 2000) {
@@ -156,9 +153,7 @@ function createLineItem(
   includeDescription = true,
 ): [CustomLineItem, ...Array<TextLineItem>] {
   const artNr = getString("./artNr[@type='final']", context) ?? "";
-  // Planning helpers carry a keyword instead of a real article number. They are
-  // only a container for their children, so they get a readable name and are
-  // left out of the "Bestehend aus" summary.
+  // Planning helpers are mere containers, left out of "Bestehend aus".
   const planningHelperName = planningHelpers.get(artNr.toUpperCase());
   const name =
     planningHelperName ??
@@ -169,7 +164,6 @@ function createLineItem(
   const currency =
     getString("./itemPrice[@type='sale'][@pd='1']/@currency", context) ?? "EUR";
 
-  // Check if main item or any sub-items are non-discounted
   const isMainNonDiscounted = nonDiscountedArtNrs.has(artNr);
   const subArticleNodes = get(`.//bskArticle`, context);
   const hasNonDiscountedSubs = subArticleNodes.some((node) => {
@@ -265,8 +259,7 @@ function aggregateDuplicateLists(
         if (hasMatchingDescriptions) {
           item[0].quantity += curr[0].quantity;
         } else {
-          // Same article/price but different composition details:
-          // keep as separate line item instead of dropping it.
+          // Same article and price but different composition: keep both.
           items.push(curr);
         }
 

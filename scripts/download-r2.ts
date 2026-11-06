@@ -53,7 +53,6 @@ async function downloadExamples(branch: string): Promise<void> {
 
   const examplesDir = join(import.meta.dir, "..", "examples");
 
-  // Ensure examples directory exists
   await mkdir(examplesDir, { recursive: true });
 
   try {
@@ -85,7 +84,6 @@ async function downloadExamples(branch: string): Promise<void> {
   }
 }
 
-// Main execution
 async function main() {
   const branchArg = process.argv[2];
   const branch = branchArg || (await getCurrentBranch());

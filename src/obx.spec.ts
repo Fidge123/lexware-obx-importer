@@ -14,7 +14,6 @@ const address = { name: "Testkunde", countryCode: "DE" };
 
 const x = xpath as unknown as XPathEvaluator;
 
-// Load non-discounted article numbers from xlsx file
 async function loadNonDiscountedArtNrs(): Promise<Set<string>> {
   try {
     const buffer = await readFile(
@@ -28,8 +27,8 @@ async function loadNonDiscountedArtNrs(): Promise<Set<string>> {
 
     const nonDiscountedArtNrs: string[] = [];
     for (const row of data) {
-      const artNr = row[0]; // Column A (index 0)
-      const columnC = row[2]; // Column C (index 2)
+      const artNr = row[0];
+      const columnC = row[2];
 
       if (
         artNr &&
@@ -328,7 +327,6 @@ test("mark items as non-discounted correctly", async () => {
     "application/xml",
   ) as unknown as Document;
 
-  // Create a set with some non-discounted article numbers
   const nonDiscounted = new Set(["502-00039", "377-00008"]);
   const payload = createPayload(
     parsed,
@@ -340,7 +338,6 @@ test("mark items as non-discounted correctly", async () => {
     nonDiscounted,
   );
 
-  // Find the items with these article numbers
   const item1 = payload.lineItems.find(
     (item) => "artNr" in item && item.artNr === "502-00039",
   ) as CustomLineItem;
@@ -351,7 +348,6 @@ test("mark items as non-discounted correctly", async () => {
     (item) => "artNr" in item && item.artNr === "550-00013",
   ) as CustomLineItem;
 
-  // Check that non-discounted items are marked correctly
   expect(item1).toBeDefined();
   expect(item1.isNonDiscounted).toBe(true);
   expect(item1.hasNonDiscountedSubItems).toBe(false);
@@ -359,7 +355,6 @@ test("mark items as non-discounted correctly", async () => {
   expect(item2.isNonDiscounted).toBe(true);
   expect(item2.hasNonDiscountedSubItems).toBe(false);
 
-  // Check that discounted items are not marked
   expect(item3).toBeDefined();
   expect(item3.isNonDiscounted).toBe(false);
   expect(item3.hasNonDiscountedSubItems).toBe(false);

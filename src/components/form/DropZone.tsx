@@ -34,7 +34,7 @@ export function DropZone({
     if (file) {
       onFileSelect(file.text(), file.name);
     }
-    // Reset the input so the same file can be selected again
+    // Allows selecting the same file again
     event.target.value = "";
   };
 
@@ -43,7 +43,6 @@ export function DropZone({
     fileInput?.click();
   };
 
-  // If no files loaded, show the original drop zone
   if (loadedFiles.length === 0) {
     return (
       <>
@@ -67,7 +66,6 @@ export function DropZone({
     );
   }
 
-  // If files are loaded, show them as chips with an add button
   return (
     <>
       <section

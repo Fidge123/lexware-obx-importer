@@ -42,7 +42,6 @@ export function LineItemComponent({
     }
   };
 
-  // Check if item is non-discounted or has non-discounted sub-items
   const isCustomItem = (item: LineItem): item is CustomLineItem => {
     return "type" in item && item.type === "custom";
   };

@@ -72,7 +72,6 @@ export function SettingsModal({
         await file.arrayBuffer(),
       );
 
-      // Store in localStorage
       localStorage.setItem(
         "nonDiscountedArtNrs",
         JSON.stringify(nonDiscountedArtNrs),
@@ -81,7 +80,6 @@ export function SettingsModal({
       localStorage.setItem("nonDiscountedFileName", file.name);
       setXlsxFileName(file.name);
 
-      // Notify parent component
       onNonDiscountedListChange(new Set(nonDiscountedArtNrs));
       onPriceListChange(new Map(Object.entries(prices)));
     } catch (error) {
@@ -89,7 +87,6 @@ export function SettingsModal({
       alert("Fehler beim Laden der Excel-Datei.");
     }
 
-    // Reset input
     event.target.value = "";
   };
   return (

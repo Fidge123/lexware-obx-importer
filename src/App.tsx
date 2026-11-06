@@ -79,7 +79,6 @@ export default function App() {
   useEffect(() => {
     void getVersion().then(setVersion);
 
-    // Load non-discounted article numbers from localStorage
     const stored = localStorage.getItem("nonDiscountedArtNrs");
     if (stored) {
       try {
@@ -133,7 +132,6 @@ export default function App() {
 
     setNonDiscountedStats({ count, totalValue });
 
-    // Show warning dialog if there are non-discounted items
     if (count > 0) {
       setWarningDialogOpen(true);
     }

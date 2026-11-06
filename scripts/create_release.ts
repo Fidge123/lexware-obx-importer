@@ -89,7 +89,6 @@ async function main() {
     console.log("📝 Creating latest.json...");
     const sigContent = await readFile(SIG_PATH, "utf-8");
 
-    // Create latest.json
     const latestJson = {
       version,
       notes: "See the assets to download this version and install.",

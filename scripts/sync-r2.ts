@@ -40,16 +40,13 @@ async function uploadExamples(branch: string): Promise<void> {
     const key = `${branch}/${filename}`;
 
     try {
-      // Read file content
       const content = await file.arrayBuffer();
       const contentBuffer = Buffer.from(content);
 
-      // Calculate MD5 hash for comparison
       const hasher = new Bun.CryptoHasher("md5");
       hasher.update(contentBuffer);
       const localHash = hasher.digest("base64");
 
-      // Check if file exists in R2 and compare ETags
       let shouldUpload = true;
       try {
         const headResponse = await fetch(
@@ -68,9 +65,7 @@ async function uploadExamples(branch: string): Promise<void> {
             shouldUpload = false;
           }
         }
-      } catch {
-        // File doesn't exist, upload it
-      }
+      } catch {}
 
       if (!shouldUpload) {
         console.log(`✓ ${filename} (unchanged)`);
@@ -78,7 +73,6 @@ async function uploadExamples(branch: string): Promise<void> {
         continue;
       }
 
-      // Upload to R2 using Bun's S3 support
       const s3 = createS3Client(config);
       await s3.write(key, file);
       console.log(`✓ ${filename} (uploaded)`);
@@ -99,7 +93,6 @@ async function listR2Branches(): Promise<Map<string, Date>> {
   const branches = new Map<string, Date>();
 
   try {
-    // List all objects
     const response = await s3.list();
     const contents = response as unknown as S3ListResponse;
 
@@ -132,7 +125,6 @@ async function cleanupOldBranches(): Promise<void> {
   const r2Branches = await listR2Branches();
   const activeBranches = await getLocalAndRemoteBranches();
 
-  // Find orphaned branches
   const orphanedBranches: Array<{ name: string; lastModified: Date }> = [];
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -152,7 +144,6 @@ async function cleanupOldBranches(): Promise<void> {
     console.log(`  • ${name} (last modified: ${lastModified.toISOString()})`);
   }
 
-  // Prompt for confirmation
   console.log("\n⚠️  Do you want to delete these branches from R2? (yes/no): ");
   const confirmation = prompt();
 
@@ -161,14 +152,12 @@ async function cleanupOldBranches(): Promise<void> {
     return;
   }
 
-  // Delete orphaned branches
   const s3 = createS3Client(config);
 
   for (const { name } of orphanedBranches) {
     console.log(`\n🗑️  Deleting branch: ${name}`);
 
     try {
-      // List all objects with this prefix
       const response = await s3.list({ prefix: `${name}/` });
       const contents = response as unknown as S3ListResponse;
 
@@ -190,7 +179,6 @@ async function cleanupOldBranches(): Promise<void> {
   console.log("\n✅ Cleanup complete");
 }
 
-// Main execution
 async function main() {
   const command = process.argv[2];
 
