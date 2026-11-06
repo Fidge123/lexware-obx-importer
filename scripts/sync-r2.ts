@@ -44,7 +44,7 @@ async function uploadExamples(branch: string): Promise<void> {
 
       const remoteEtag = await s3
         .stat(key)
-        .then((stats) => stats.etag.replace(/"/g, ""))
+        .then((stats) => stats.etag.replace(/^W\//, "").replace(/"/g, ""))
         .catch(() => undefined);
 
       if (remoteEtag === localHash) {
