@@ -33,10 +33,10 @@ function planningHelperDocument(): Document {
   return parseXml(`<cutBuffer><items>
     ${article(
       "TEILPLANNUNG_TP",
-      "Planungshilfe Tischplatten",
+      "Planungshilfe",
       "0.00",
-      article("581-00106", "Tischplatte Eiche", "250.00") +
-        article("581-00107", "Tischplatte Nussbaum", "300.00"),
+      article("100-00001", "Artikel A", "250.00") +
+        article("100-00002", "Artikel B", "300.00"),
     )}
   </items></cutBuffer>`);
 }
@@ -71,22 +71,22 @@ test("planning helper articles are left out of the summary of their children", (
   expect(summary.name).toBe("Bestehend aus:");
   expect(summary.description).not.toContain("Tischplatte individuell");
   expect(summary.description).not.toContain("TEILPLANNUNG_TP");
-  expect(summary.description).not.toContain("Planungshilfe Tischplatten");
+  expect(summary.description).not.toContain("Planungshilfe");
   expect(summary.description).toContain(
-    "1x Tischplatte Eiche | 581-00106 | je 250.00 EUR",
+    "1x Artikel A | 100-00001 | je 250.00 EUR",
   );
   expect(summary.description).toContain(
-    "1x Tischplatte Nussbaum | 581-00107 | je 300.00 EUR",
+    "1x Artikel B | 100-00002 | je 300.00 EUR",
   );
 });
 
 test("regular articles keep their own line in the summary", () => {
   const doc = parseXml(`<cutBuffer><items>
     ${article(
-      "581-00106",
-      "Schreibtisch",
+      "100-00001",
+      "Artikel A",
       "500.00",
-      article("581-00200", "Kabelwanne", "50.00"),
+      article("100-00002", "Artikel B", "50.00"),
     )}
   </items></cutBuffer>`);
 
@@ -94,17 +94,17 @@ test("regular articles keep their own line in the summary", () => {
   const item = lineItems[0] as CustomLineItem;
   const summary = lineItems[1] as TextLineItem;
 
-  expect(item.name).toBe("581-00106 | Schreibtisch");
+  expect(item.name).toBe("100-00001 | Artikel A");
   expect(summary.description).toContain(
-    "1x 581-00106 | Schreibtisch | je 500.00 EUR",
+    "1x 100-00001 | Artikel A | je 500.00 EUR",
   );
-  expect(summary.description).toContain("1x Kabelwanne | 581-00200 | je 50.00");
+  expect(summary.description).toContain("1x Artikel B | 100-00002 | je 50.00");
 });
 
 test("articles without children have no summary", () => {
   const doc = parseXml(`<cutBuffer><items>
-    ${article("581-00106", "Schreibtisch", "500.00")}
-    ${article("TEILPLANNUNG_TP", "Planungshilfe Tischplatten", "0.00")}
+    ${article("100-00001", "Artikel A", "500.00")}
+    ${article("TEILPLANNUNG_TP", "Planungshilfe", "0.00")}
   </items></cutBuffer>`);
 
   const { lineItems } = createPayload(doc, 1, true, false, undefined, x);

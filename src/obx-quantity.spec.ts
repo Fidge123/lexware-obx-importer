@@ -17,7 +17,7 @@ function parseXml(xml: string): Document {
 function article(artNr: string, price: string, quantity?: string): string {
   return `<bskArticle>
     <artNr type="final">${artNr}</artNr>
-    <description type="short"><text lang="de">Sockelschrank</text></description>
+    <description type="short"><text lang="de">Artikel</text></description>
     <description type="features"><text lang="de">Merkmale ${artNr}</text></description>
     ${quantity ? `<quantity count="${quantity}"/>` : ""}
     <itemPrice type="sale" pd="1" value="${price}" currency="EUR"/>
@@ -34,8 +34,8 @@ function customItems(lineItems: unknown[]): CustomLineItem[] {
 
 test("line items take their quantity from the obx", () => {
   const doc = parseXml(`<cutBuffer><items>
-    ${article("311-00054", "1238.0", "4.")}
-    ${article("311-00056", "764.0")}
+    ${article("100-00001", "100.0", "3.")}
+    ${article("100-00002", "50.0")}
   </items></cutBuffer>`);
 
   const items = customItems(
@@ -43,17 +43,17 @@ test("line items take their quantity from the obx", () => {
   );
 
   expect(items.map((item) => [item.artNr, item.quantity])).toEqual([
-    ["311-00054", 4],
-    ["311-00056", 1],
+    ["100-00001", 3],
+    ["100-00002", 1],
   ]);
-  expect(items[0].unitPrice.netAmount).toBe(1238);
+  expect(items[0].unitPrice.netAmount).toBe(100);
 });
 
 test("grouping adds up obx quantities", () => {
   const doc = parseXml(`<cutBuffer><items>
-    ${article("550-00014", "699.3")}
-    ${article("550-00014", "699.3")}
-    ${article("550-00014", "699.3", "4.")}
+    ${article("100-00001", "100.0")}
+    ${article("100-00001", "100.0", "3.")}
+    ${article("100-00001", "100.0", "5.")}
   </items></cutBuffer>`);
 
   const items = customItems(
@@ -61,16 +61,16 @@ test("grouping adds up obx quantities", () => {
   );
 
   expect(items).toHaveLength(1);
-  expect(items[0].quantity).toBe(6);
+  expect(items[0].quantity).toBe(9);
 });
 
 test("room totals include obx quantities", () => {
   const doc = parseXml(`<cutBuffer><items>
-    ${article("502-00003", "508.0", "2.")}
+    ${article("100-00001", "250.0", "3.")}
   </items></cutBuffer>`);
 
   const { lineItems } = createPayload(
-    { "Pos. 2": doc },
+    { "Raum 1": doc },
     1,
     true,
     true,
@@ -79,6 +79,6 @@ test("room totals include obx quantities", () => {
   );
 
   expect((lineItems as TextLineItem[]).map((item) => item.name)).toContain(
-    "Nettosumme Pos. 2: 1.016,00 EUR",
+    "Nettosumme Raum 1: 750,00 EUR",
   );
 });

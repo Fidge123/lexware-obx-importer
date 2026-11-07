@@ -32,35 +32,35 @@ function article(
 function document(): Document {
   return parseXml(`<cutBuffer><items>
     ${article(
-      "550-00015",
-      "Tischplatte",
-      "1409.4",
-      article("581-00081", "Spülbecken", "1408.0") +
-        article("579-00046", "Abtropfrillen", "NaN"),
+      "100-00001",
+      "Artikel A",
+      "1000.0",
+      article("100-00002", "Artikel B", "500.0") +
+        article("100-00003", "Artikel C", "NaN"),
     )}
-    ${article("567-00444", "Beckenausschnitt", "300.0")}
+    ${article("100-00004", "Artikel D", "300.0")}
   </items></cutBuffer>`);
 }
 
 const priceList = new Map([
-  ["581-00081", 1408],
-  ["579-00046", 275],
-  ["567-00444", 326],
+  ["100-00002", 500],
+  ["100-00003", 250],
+  ["100-00004", 320],
 ]);
 
 test("finds articles whose prices differ from the price list", () => {
   expect(findPriceMismatches(document(), priceList, x)).toEqual([
     {
-      artNr: "579-00046",
-      name: "Abtropfrillen",
+      artNr: "100-00003",
+      name: "Artikel C",
       obxPrice: null,
-      listPrice: 275,
+      listPrice: 250,
     },
     {
-      artNr: "567-00444",
-      name: "Beckenausschnitt",
+      artNr: "100-00004",
+      name: "Artikel D",
       obxPrice: 300,
-      listPrice: 326,
+      listPrice: 320,
     },
   ]);
 });
@@ -71,7 +71,7 @@ test("reports every article only once across multiple documents", () => {
     priceList,
     x,
   );
-  expect(mismatches.map((m) => m.artNr)).toEqual(["579-00046", "567-00444"]);
+  expect(mismatches.map((m) => m.artNr)).toEqual(["100-00003", "100-00004"]);
 });
 
 test("no mismatches without a price list", () => {
@@ -89,7 +89,7 @@ test("obx prices are used by default and missing prices count as 0", () => {
     new Set(),
     priceList,
   );
-  expect((lineItems[0] as CustomLineItem).unitPrice.netAmount).toBe(2817.4);
+  expect((lineItems[0] as CustomLineItem).unitPrice.netAmount).toBe(1500);
   expect((lineItems[2] as CustomLineItem).unitPrice.netAmount).toBe(300);
 });
 
@@ -105,13 +105,13 @@ test("price list prices replace obx prices when chosen", () => {
     priceList,
     "priceList",
   );
-  const table = lineItems[0] as CustomLineItem;
-  // 550-00015 is not in the price list
-  expect(table.unitPrice.netAmount).toBe(
-    Math.round((1409.4 + 1408 + 275) * 1.1 * 100) / 100,
+  const parent = lineItems[0] as CustomLineItem;
+  // 100-00001 is not in the price list
+  expect(parent.unitPrice.netAmount).toBe(
+    Math.round((1000 + 500 + 250) * 1.1 * 100) / 100,
   );
   expect((lineItems[1] as TextLineItem).description).toContain(
-    "1x Abtropfrillen | 579-00046 | je 302.50 EUR",
+    "1x Artikel C | 100-00003 | je 275.00 EUR",
   );
-  expect((lineItems[2] as CustomLineItem).unitPrice.netAmount).toBe(358.6);
+  expect((lineItems[2] as CustomLineItem).unitPrice.netAmount).toBe(352);
 });
