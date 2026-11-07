@@ -58,6 +58,11 @@ function getObxPrice(node: Node): number | null {
   return Number.isFinite(value) ? money(value) : null;
 }
 
+function getQuantity(node: Node): number {
+  const count = parseFloat(getString("./quantity/@count", node) ?? "");
+  return Number.isFinite(count) ? count : 1;
+}
+
 function getItemPrice(node: Node): number {
   const artNr = getString("./artNr[@type='final']", node);
   const listPrice =
@@ -192,7 +197,7 @@ function createLineItem(
         (!includeDescription && subItems.length
           ? `\n\n${subItems[0].name}\n${subItems[0].description}`
           : ""),
-      quantity: 1,
+      quantity: getQuantity(context),
       unitName: "Stk.",
       unitPrice: {
         currency: currency,
@@ -298,27 +303,25 @@ function getShippingCosts(volumes: number[], weights: number[]): LineItem {
 
 function getVolumes(parsed: Document) {
   return getPrefix(parsed).flatMap(([, root]) =>
-    get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='volume']/@value", context) ??
-          get(".//feature[@name='VOLUMEN']/@value", context) ??
-          get(".//feature[@name='Volumen']/@value", context),
-      )
-      .map((v) => parseFloat((v as Attr).value || "0")),
+    get("./bskArticle", root).flatMap((context) =>
+      (
+        get(".//packInfo[@key='volume']/@value", context) ??
+        get(".//feature[@name='VOLUMEN']/@value", context) ??
+        get(".//feature[@name='Volumen']/@value", context)
+      ).map((v) => parseFloat((v as Attr).value || "0") * getQuantity(context)),
+    ),
   );
 }
 
 function getWeights(parsed: Document) {
   return getPrefix(parsed).flatMap(([, root]) =>
-    get("./bskArticle", root)
-      .flatMap(
-        (context) =>
-          get(".//packInfo[@key='netWeight']/@originalValue", context) ??
-          get(".//feature[@name='GEWICHT']/@value", context) ??
-          get(".//feature[@name='Gewicht']/@value", context),
-      )
-      .map((v) => parseFloat((v as Attr).value || "0")),
+    get("./bskArticle", root).flatMap((context) =>
+      (
+        get(".//packInfo[@key='netWeight']/@originalValue", context) ??
+        get(".//feature[@name='GEWICHT']/@value", context) ??
+        get(".//feature[@name='Gewicht']/@value", context)
+      ).map((v) => parseFloat((v as Attr).value || "0") * getQuantity(context)),
+    ),
   );
 }
 

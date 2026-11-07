@@ -54,6 +54,25 @@ test("computeShippingInputs combines volumes and weights across multiple documen
   expect(weights).toEqual([10.0, 25.0]);
 });
 
+test("computeShippingInputs multiplies volumes and weights by the obx quantity", () => {
+  const doc = parseXml(`<cutBuffer><items>
+    <bskArticle>
+      <quantity count="4."/>
+      <packInfo key="volume" value="0.5"/>
+      <packInfo key="netWeight" originalValue="60.0"/>
+      <bskArticle>
+        <packInfo key="volume" value="0.1"/>
+        <packInfo key="netWeight" originalValue="10.0"/>
+      </bskArticle>
+    </bskArticle>
+  </items></cutBuffer>`);
+
+  const { volumes, weights } = computeShippingInputs(doc, x);
+
+  expect(volumes).toEqual([2, 0.4]);
+  expect(weights).toEqual([240, 40]);
+});
+
 test("computeShippingInputs total volume drives the shipping cost approximation", () => {
   const doc = parseXml(`<cutBuffer><items>
     <bskArticle>
