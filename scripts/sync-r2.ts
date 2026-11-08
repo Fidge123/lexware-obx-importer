@@ -29,8 +29,10 @@ async function uploadExamples(branch: string): Promise<void> {
     const file = Bun.file(filePath);
     const exists = await file.exists();
 
-    if (!exists) {
-      console.log(`⚠️  Skipping ${filename} (not found)`);
+    if (!exists || filename === ".DS_Store") {
+      console.log(
+        `⚠️  Skipping ${filename} (${exists ? "ignored" : "not found"})`,
+      );
       continue;
     }
 

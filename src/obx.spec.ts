@@ -432,3 +432,24 @@ fixtureTest(
     ).toEqual(listPrices.lineItems ?? listPrices);
   },
 );
+
+fixtureTest("correctly read quantity parameter in obx 10", async () => {
+  const parser = new DOMParser();
+  const obx = await readFile("examples/10.obx", utf8);
+
+  const grouped = JSON.parse(await readFile("examples/10-grouped.json", utf8));
+  const ungrouped = JSON.parse(
+    await readFile("examples/10-ungrouped.json", utf8),
+  );
+  const parsed = parser.parseFromString(
+    obx,
+    "application/xml",
+  ) as unknown as Document;
+
+  expect(createPayload(parsed, 1, true, true, address, x).lineItems).toEqual(
+    grouped.lineItems,
+  );
+  expect(createPayload(parsed, 1, true, false, address, x).lineItems).toEqual(
+    ungrouped.lineItems,
+  );
+});
