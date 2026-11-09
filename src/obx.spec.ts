@@ -1,11 +1,12 @@
 import { expect, test } from "bun:test";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { DOMParser } from "@xmldom/xmldom";
 import * as XLSX from "xlsx";
 import xpath from "xpath";
 
 import { createPayload, findPriceMismatches } from "./obx.ts";
+import { findUnsafeObxVersions } from "./obxVersion.ts";
 import { parsePriceList } from "./priceList.ts";
 import type { CustomLineItem, LineItemWithType, Quotation } from "./types.ts";
 import { count } from "./util.ts";
@@ -452,4 +453,36 @@ fixtureTest("correctly read quantity parameter in obx 10", async () => {
   expect(createPayload(parsed, 1, true, false, address, x).lineItems).toEqual(
     ungrouped.lineItems,
   );
+});
+
+async function loadObxFixtures(): Promise<Record<string, Document>> {
+  const filenames = (await readdir("examples")).filter((f) =>
+    f.endsWith(".obx"),
+  );
+  const docs: Record<string, Document> = {};
+  for (const filename of filenames) {
+    docs[filename] = new DOMParser().parseFromString(
+      await readFile(`examples/${filename}`, utf8),
+      "application/xml",
+    ) as unknown as Document;
+  }
+  return docs;
+}
+
+fixtureTest(
+  "no example obx is newer than the default safe version",
+  async () => {
+    const docs = await loadObxFixtures();
+
+    expect(Object.keys(docs).length).toBeGreaterThan(0);
+    expect(findUnsafeObxVersions(docs, "1.8.11", x)).toEqual([]);
+  },
+);
+
+fixtureTest("only 09.obx and 10.obx are newer than 1.8.10", async () => {
+  const docs = await loadObxFixtures();
+
+  expect(
+    findUnsafeObxVersions(docs, "1.8.10", x).map((v) => v.filename),
+  ).toEqual(["09.obx", "10.obx"]);
 });

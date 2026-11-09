@@ -20,6 +20,7 @@ import { DropZone } from "./components/form/DropZone.tsx";
 import { MultiplierInput } from "./components/form/MultiplierInput.tsx";
 import { LineItemsRenderer } from "./components/lineitems/LineItemsRenderer.tsx";
 import { NonDiscountedWarningDialog } from "./components/NonDiscountedWarningDialog.tsx";
+import { ObxVersionDialog } from "./components/ObxVersionDialog.tsx";
 import { PriceMismatchDialog } from "./components/PriceMismatchDialog.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
 import {
@@ -29,6 +30,12 @@ import {
   type PriceMismatch,
   type PriceSource,
 } from "./obx.ts";
+import {
+  defaultSafeBskXmlVersion,
+  findUnsafeObxVersions,
+  highestVersion,
+  type UnsafeObxVersion,
+} from "./obxVersion.ts";
 import type { Address, CustomLineItem, LineItem, Quotation } from "./types.ts";
 import { money } from "./util.ts";
 
@@ -71,6 +78,13 @@ export default function App() {
   const [priceMismatches, setPriceMismatches] = useState<PriceMismatch[]>([]);
   const [priceDialogOpen, setPriceDialogOpen] = useState(false);
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
+  const [safeObxVersion, setSafeObxVersion] = useState(
+    localStorage.getItem("safeBskXmlVersion") ?? defaultSafeBskXmlVersion,
+  );
+  const [unsafeObxVersions, setUnsafeObxVersions] = useState<
+    UnsafeObxVersion[]
+  >([]);
+  const [versionDialogOpen, setVersionDialogOpen] = useState(false);
   const [nonDiscountedStats, setNonDiscountedStats] = useState({
     count: 0,
     totalValue: 0,
@@ -110,6 +124,18 @@ export default function App() {
     setPriceMismatches(mismatches);
     setPriceDialogOpen(mismatches.length > 0);
   }, [xmlDocs, priceList]);
+
+  useEffect(() => {
+    const unsafe = findUnsafeObxVersions(xmlDocs, safeObxVersion);
+    setUnsafeObxVersions(unsafe);
+    setVersionDialogOpen(unsafe.length > 0);
+  }, [xmlDocs, safeObxVersion]);
+
+  function handleSaveObxVersion() {
+    const version = highestVersion(unsafeObxVersions.map((v) => v.version));
+    localStorage.setItem("safeBskXmlVersion", version);
+    setSafeObxVersion(version);
+  }
 
   useEffect(() => {
     localStorage.setItem("grouping", String(grouping));
@@ -343,8 +369,16 @@ export default function App() {
         }}
       />
 
+      <ObxVersionDialog
+        isOpen={versionDialogOpen}
+        versions={unsafeObxVersions}
+        safeVersion={safeObxVersion}
+        onClose={() => setVersionDialogOpen(false)}
+        onSaveAsSafe={handleSaveObxVersion}
+      />
+
       <PriceMismatchDialog
-        isOpen={priceDialogOpen}
+        isOpen={priceDialogOpen && !versionDialogOpen}
         mismatches={priceMismatches}
         onChoose={(source) => {
           setPriceSource(source);
@@ -353,7 +387,7 @@ export default function App() {
       />
 
       <NonDiscountedWarningDialog
-        isOpen={warningDialogOpen && !priceDialogOpen}
+        isOpen={warningDialogOpen && !priceDialogOpen && !versionDialogOpen}
         onClose={() => setWarningDialogOpen(false)}
         onApplySurcharge={handleApplyNonDiscountedSurcharge}
         count={nonDiscountedStats.count}
