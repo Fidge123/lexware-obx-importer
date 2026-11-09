@@ -479,10 +479,10 @@ fixtureTest(
   },
 );
 
-fixtureTest("only 10.obx is newer than 1.8.10", async () => {
+fixtureTest("only 09.obx and 10.obx are newer than 1.8.10", async () => {
   const docs = await loadObxFixtures();
 
   expect(
     findUnsafeObxVersions(docs, "1.8.10", x).map((v) => v.filename),
-  ).toEqual(["10.obx"]);
+  ).toEqual(["09.obx", "10.obx"]);
 });
