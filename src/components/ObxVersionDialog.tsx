@@ -47,7 +47,7 @@ export function ObxVersionDialog({
             <button
               type="button"
               onClick={onClose}
-              className="whitespace-nowrap rounded-md bg-white px-3 py-1.5 font-semibold text-sm shadow transition-all hover:bg-gray-200"
+              className="whitespace-nowrap rounded-md bg-blue-500 px-3 py-1.5 font-semibold text-sm text-white shadow transition-all hover:bg-blue-600"
             >
               Verstanden
             </button>
