@@ -2,6 +2,39 @@
 
 This software allows you to import pCon OBX files as lexware office quotations.
 
+## Telemetry (PostHog)
+
+The app can send opt-in error and performance events to PostHog in the EU region.
+Telemetry is off until the user enables "Diagnosedaten senden" in the settings.
+Events are identified by a random install ID and credentials are redacted from every message before it is stored.
+
+| Event                 | Properties                                           |
+| --------------------- | ---------------------------------------------------- |
+| `operation_completed` | `operation`, `integration`, `success`, `duration_ms` |
+| `error_occurred`      | `operation`, `integration`, `code`, `message`        |
+| `app_started`         | `duration_ms`                                        |
+
+Every event also carries `app`, `app_version`, `os_name` and `os_version`.
+
+The PostHog project key is read from `VITE_POSTHOG_API_KEY` at build time.
+Only the release workflow sets it, so local and CI builds send nothing.
+When the variable is set for `bun test`, a live test sends one event as the distinct ID `lexware-obx-importer-integration-test`.
+
+### Sharing one PostHog project with lkr-planner
+
+The PostHog free plan allows only one project, so this app and lkr-planner share it.
+Both apps send the same event names, so the `app` property is what keeps their data apart.
+
+1. Create one project in the PostHog EU cloud and copy its project API key (`phc_...`) from the project settings.
+2. Add that key as the repository secret `POSTHOG_API_KEY` in both GitHub repositories.
+3. Filter every insight and dashboard on `app`, ideally with a dashboard-wide filter: `app = lexware-obx-importer` for this app.
+4. lkr-planner does not send an `app` property, so filter its insights on `app is not set` until it adds `app = lkr-planner`.
+5. Under project settings, add a test account filter for distinct IDs containing `integration-test` and enable it by default, so the CI live tests of both apps stay out of the charts.
+
+The free monthly event allowance is shared by both apps.
+On the free plan PostHog stops ingesting once the allowance is used up instead of charging, so the cost risk is losing events late in the month.
+Neither app uses autocapture or session replay, so the volume stays at a few events per user action.
+
 ## CloudFlare R2 Test File Sync
 
 This project uses CloudFlare R2 to store and sync test example files across branches.

@@ -34,3 +34,5 @@ jobs:
 
       - name: Run tests
         run: bun test
+        env:
+          VITE_POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}

@@ -15,10 +15,14 @@
         },
         {
           "url": "https://koettermann.iw-erp.de/"
+        },
+        {
+          "url": "https://eu.i.posthog.com/"
         }
       ]
     },
     "http:default",
-    "fs:default"
+    "fs:default",
+    "os:default"
   ]
 }

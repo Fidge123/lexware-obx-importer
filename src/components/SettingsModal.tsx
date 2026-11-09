@@ -11,6 +11,7 @@ import { parsePriceList } from "../priceList.ts";
 import { ApiKeyInput } from "./form/ApiKeyInput.tsx";
 import { DescriptionToggle } from "./form/DescriptionToggle.tsx";
 import { GroupingToggle } from "./form/GroupingToggle.tsx";
+import { TelemetryToggle } from "./form/TelemetryToggle.tsx";
 
 export function SettingsModal({
   isOpen,
@@ -186,6 +187,8 @@ export function SettingsModal({
                 </p>
               )}
             </div>
+
+            <TelemetryToggle />
           </div>
 
           <div className="flex items-center justify-between">
