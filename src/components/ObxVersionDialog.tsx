@@ -43,18 +43,18 @@ export function ObxVersionDialog({
             werden. Dieser Hinweis erscheint dann erst wieder bei einer neueren
             Version.
           </p>
-          <div className="flex gap-4">
+          <div className="flex justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-lg border bg-blue-500 px-4 py-2 text-white transition-colors hover:bg-blue-600"
+              className="whitespace-nowrap rounded-md bg-white px-3 py-1.5 font-semibold text-sm shadow transition-all hover:bg-gray-200"
             >
               Verstanden
             </button>
             <button
               type="button"
               onClick={onSaveAsSafe}
-              className="w-full rounded-lg border bg-orange-600 px-4 py-2 text-white transition-colors hover:bg-orange-700"
+              className="whitespace-nowrap rounded-md bg-orange-600 px-3 py-1.5 font-semibold text-sm text-white shadow transition-all hover:bg-orange-700"
             >
               Version als sicher speichern
             </button>

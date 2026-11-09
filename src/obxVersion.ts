@@ -6,8 +6,8 @@ export interface UnsafeObxVersion {
 }
 
 export function compareVersions(a: string, b: string): number {
-  const left = a.split(".").map(Number);
-  const right = b.split(".").map(Number);
+  const left = a.split(".").map((part) => Number.parseInt(part, 10));
+  const right = b.split(".").map((part) => Number.parseInt(part, 10));
   for (let i = 0; i < Math.max(left.length, right.length); i++) {
     const diff = (left[i] || 0) - (right[i] || 0);
     if (diff !== 0) {
@@ -23,7 +23,7 @@ export function getBskXmlVersion(
 ): string | undefined {
   const node = xpath
     .evaluate(
-      "(//@bskXmlVersion | //bskXmlVersion)",
+      "/*/versionInfo/@bskXmlVersion",
       doc,
       null,
       0 /* XPathResult.ANY_TYPE */,
