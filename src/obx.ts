@@ -96,22 +96,26 @@ function collectFeatureTexts(parsed: Document) {
   }
 }
 
-// Only all-caps features are customer facing.
+// Only visible, translated all-caps features are customer facing.
 function describeFeatures(node: Node): string | undefined {
   const lines = get("./features/feature", node).flatMap((feature) => {
     const name = getString("./@name", feature) ?? "";
-    if (name !== name.toUpperCase() || name === "NUMMER") {
+    if (
+      name !== name.toUpperCase() ||
+      name === "NUMMER" ||
+      getString("./@flags", feature) === "0"
+    ) {
       return [];
     }
+    const nameText = resolveText(feature, "nameText", name);
     const value = getString("./@value", feature);
     const valueText = resolveText(feature, "valueText", `${name}=${value}`);
-    if (!valueText && !value) {
+    if (!nameText || nameText === name || (!valueText && !value)) {
       return [];
     }
     if (name === "LANGTEXT" || name === "ARTIKELTEXT") {
       return [valueText ?? value];
     }
-    const nameText = resolveText(feature, "nameText", name) ?? name;
     return [`${nameText}: ${valueText ?? value}`];
   });
   return lines.length ? lines.join("\n") : undefined;

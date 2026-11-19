@@ -58,13 +58,17 @@ test("descriptions list all-caps features instead of the features description", 
         <valueText lang="de">Eckunterschrank,
           1 Tür rechts</valueText>
       </feature>
-      <feature name="P1_BREITE" value="830" flags="1"/>`,
+      <feature name="P1_BREITE" value="830" flags="1">
+        <nameText lang="de">P1_BREITE</nameText><valueText lang="de">830</valueText>
+      </feature>
+      <feature name="MEDIUM" value="AR" flags="1" nameText="feature.999"/>
+      <feature name="ABLAGE" value="1" flags="0">
+        <nameText lang="de">Ablageboden</nameText><valueText lang="de">1 Ablageboden</valueText>
+      </feature>`,
     ),
   ) as CustomLineItem[];
 
-  expect(item.description).toBe(
-    "Breite: 900mm\nEckunterschrank, 1 Tür rechts\nP1_BREITE: 830",
-  );
+  expect(item.description).toBe("Breite: 900mm\nEckunterschrank, 1 Tür rechts");
 });
 
 test("feature texts are resolved by id reference and by earlier occurrence", () => {
