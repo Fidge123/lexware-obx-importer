@@ -46,6 +46,16 @@ bun run download:r2
 bun run download:r2 main
 ```
 
+#### Regenerate Expected Outputs
+
+Rewrite the expected `lineItems` of every JSON file in `examples/` after an intended change to the generated quotations:
+
+```bash
+bun run regenerate:examples
+```
+
+Review the diff of the regenerated files, then upload them with `bun run sync:r2`.
+
 #### Cleanup Old Branches
 
 Remove test files for branches that no longer exist locally or on the remote:
