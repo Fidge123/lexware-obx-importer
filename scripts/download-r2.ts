@@ -2,11 +2,13 @@
 
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { createS3Client, getCurrentBranch, getR2Config } from "./r2-utils";
-
-type S3ListResponse = {
-  contents?: Array<{ key?: string }>;
-};
+import {
+  createS3Client,
+  getBranchOfKey,
+  getCurrentBranch,
+  getR2Config,
+  listObjects,
+} from "./r2-utils";
 
 async function downloadExamplesForBranch(
   branch: string,
@@ -16,29 +18,25 @@ async function downloadExamplesForBranch(
   const s3 = createS3Client(config);
 
   console.log(`🔍 Listing objects with prefix: ${branch}/`);
-  const response = await s3.list({ prefix: `${branch}/` });
-  const contents = response as unknown as S3ListResponse;
 
   let downloadedCount = 0;
 
-  if (contents.contents) {
-    for (const object of contents.contents) {
-      if (!object.key) continue;
+  for (const { key } of await listObjects(s3, `${branch}/`)) {
+    if (getBranchOfKey(key) !== branch) continue;
 
-      const filename = object.key.replace(`${branch}/`, "");
-      if (!filename) continue;
+    const filename = key.replace(`${branch}/`, "");
+    if (!filename) continue;
 
-      const filePath = join(examplesDir, filename);
+    const filePath = join(examplesDir, filename);
 
-      try {
-        const file = s3.file(object.key);
-        const fileData = await file.arrayBuffer();
-        await Bun.write(filePath, fileData);
-        console.log(`✓ ${filename}`);
-        downloadedCount++;
-      } catch (error) {
-        console.error(`❌ Failed to download ${filename}:`, error);
-      }
+    try {
+      const file = s3.file(key);
+      const fileData = await file.arrayBuffer();
+      await Bun.write(filePath, fileData);
+      console.log(`✓ ${filename}`);
+      downloadedCount++;
+    } catch (error) {
+      console.error(`❌ Failed to download ${filename}:`, error);
     }
   }
 

@@ -4,14 +4,12 @@ import { readdir } from "node:fs/promises";
 import { join } from "node:path";
 import {
   createS3Client,
+  getBranchOfKey,
   getCurrentBranch,
   getLocalAndRemoteBranches,
   getR2Config,
+  listObjects,
 } from "./r2-utils";
-
-type S3ListResponse = {
-  Contents?: Array<{ Key?: string; LastModified?: string }>;
-};
 
 async function uploadExamples(branch: string): Promise<void> {
   const s3 = createS3Client(getR2Config());
@@ -73,22 +71,15 @@ async function listR2Branches(): Promise<Map<string, Date>> {
   const branches = new Map<string, Date>();
 
   try {
-    const response = await s3.list();
-    const contents = response as unknown as S3ListResponse;
+    for (const object of await listObjects(s3)) {
+      const branchName = getBranchOfKey(object.key);
+      const lastModified = object.lastModified
+        ? new Date(object.lastModified)
+        : new Date();
 
-    if (contents.Contents) {
-      for (const object of contents.Contents) {
-        if (object.Key) {
-          const branchName = object.Key.split("/")[0];
-          const lastModified = object.LastModified
-            ? new Date(object.LastModified)
-            : new Date();
-
-          const existingDate = branches.get(branchName);
-          if (!existingDate || lastModified > existingDate) {
-            branches.set(branchName, lastModified);
-          }
-        }
+      const existingDate = branches.get(branchName);
+      if (!existingDate || lastModified > existingDate) {
+        branches.set(branchName, lastModified);
       }
     }
   } catch (error) {
@@ -138,16 +129,12 @@ async function cleanupOldBranches(): Promise<void> {
     console.log(`\n🗑️  Deleting branch: ${name}`);
 
     try {
-      const response = await s3.list({ prefix: `${name}/` });
-      const contents = response as unknown as S3ListResponse;
-
-      if (contents.Contents) {
-        for (const object of contents.Contents) {
-          if (object.Key) {
-            await s3.delete(object.Key);
-            console.log(`  ✓ Deleted ${object.Key}`);
-          }
+      for (const { key } of await listObjects(s3, `${name}/`)) {
+        if (getBranchOfKey(key) !== name) {
+          continue;
         }
+        await s3.delete(key);
+        console.log(`  ✓ Deleted ${key}`);
       }
 
       console.log(`✅ Branch ${name} deleted`);

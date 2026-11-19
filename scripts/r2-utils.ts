@@ -1,4 +1,6 @@
-import { $, S3Client } from "bun";
+import { $, S3Client, type S3ListObjectsResponse } from "bun";
+
+type S3Object = NonNullable<S3ListObjectsResponse["contents"]>[number];
 
 export interface R2Config {
   accountId: string;
@@ -35,6 +37,27 @@ export function createS3Client(config: R2Config): S3Client {
     secretAccessKey: config.secretAccessKey,
     bucket: config.bucketName,
   });
+}
+
+export async function listObjects(
+  s3: S3Client,
+  prefix?: string,
+): Promise<S3Object[]> {
+  const objects: S3Object[] = [];
+  let continuationToken: string | undefined;
+  do {
+    const page = await s3.list({ prefix, continuationToken });
+    objects.push(...(page.contents ?? []));
+    continuationToken = page.isTruncated
+      ? page.nextContinuationToken
+      : undefined;
+  } while (continuationToken);
+  return objects;
+}
+
+// Branch names may contain slashes, examples are stored flat below them.
+export function getBranchOfKey(key: string): string {
+  return key.slice(0, key.lastIndexOf("/"));
 }
 
 export async function getCurrentBranch(): Promise<string> {
