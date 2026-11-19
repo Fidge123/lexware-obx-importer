@@ -34,6 +34,15 @@ This will:
 - Upload all files from `examples/` to R2 under the branch prefix
 - Skip files that haven't changed (based on MD5 hash comparison)
 
+Pass a branch name to upload under a different prefix, e.g. `bun run sync:r2 main`.
+
+#### Merging Pull Requests
+
+When a pull request is merged, the test workflow on `main` uploads the pull request branch's examples to `main` before downloading them.
+Syncing to `main` before merging is not needed.
+Files are only added or overwritten, so examples deleted on the branch stay on `main`.
+If `main` changed an example after the branch last synced, the branch version overwrites it.
+
 #### Download Examples from R2
 
 Download example files for a specific branch:
@@ -45,6 +54,16 @@ bun run download:r2
 # Download for a specific branch
 bun run download:r2 main
 ```
+
+#### Regenerate Expected Outputs
+
+Rewrite the expected `lineItems` of every JSON file in `examples/` after an intended change to the generated quotations:
+
+```bash
+bun run regenerate:examples
+```
+
+Review the diff of the regenerated files, then upload them with `bun run sync:r2`.
 
 #### Cleanup Old Branches
 

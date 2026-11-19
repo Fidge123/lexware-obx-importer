@@ -17,7 +17,8 @@
     "format:check": "biome format .",
     "sync:r2": "bun run scripts/sync-r2.ts",
     "sync:r2:cleanup": "bun run scripts/sync-r2.ts cleanup",
-    "download:r2": "bun run scripts/download-r2.ts"
+    "download:r2": "bun run scripts/download-r2.ts",
+    "regenerate:examples": "bun run scripts/regenerate-examples.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.10",
