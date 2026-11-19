@@ -456,9 +456,9 @@ fixtureTest("correctly read quantity parameter in obx 10", async () => {
 });
 
 async function loadObxFixtures(): Promise<Record<string, Document>> {
-  const filenames = (await readdir("examples")).filter((f) =>
-    f.endsWith(".obx"),
-  );
+  const filenames = (await readdir("examples"))
+    .filter((f) => f.endsWith(".obx"))
+    .sort();
   const docs: Record<string, Document> = {};
   for (const filename of filenames) {
     docs[filename] = new DOMParser().parseFromString(
