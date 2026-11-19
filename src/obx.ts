@@ -18,6 +18,9 @@ let multiplier: number;
 let nonDiscountedArtNrs: Set<string>;
 let priceList: Map<string, number>;
 let priceSource: PriceSource;
+let featureTexts: Record<TextTag, Map<string, string>>;
+
+type TextTag = "nameText" | "valueText";
 
 export type PriceSource = "obx" | "priceList";
 
@@ -47,6 +50,79 @@ function get(xpath: string, context: Node): Node[] {
 function getString(xpath: string, context: Node): string | undefined {
   const content = get(xpath, context)[0]?.textContent;
   return content?.replace(/\t/g, "").trim();
+}
+
+function getText(feature: Node, tag: TextTag): string | undefined {
+  return (
+    getString(`./${tag}[@lang='de']`, feature)?.replace(/\s+/g, " ") ||
+    undefined
+  );
+}
+
+// Feature texts are written once and later referenced by id; newer OBX versions also leave them empty without a reference.
+function resolveText(
+  feature: Node,
+  tag: TextTag,
+  fallbackKey: string,
+): string | undefined {
+  return (
+    getText(feature, tag) ??
+    featureTexts[tag].get(`#${getString(`./@${tag}`, feature)}`) ??
+    featureTexts[tag].get(fallbackKey)
+  );
+}
+
+function collectFeatureTexts(parsed: Document) {
+  featureTexts = { nameText: new Map(), valueText: new Map() };
+  for (const feature of get("//feature", parsed)) {
+    const id = getString("./@id", feature);
+    const name = getString("./@name", feature) ?? "";
+    const keys: Record<TextTag, string> = {
+      nameText: name,
+      valueText: `${name}=${getString("./@value", feature)}`,
+    };
+    for (const tag of ["nameText", "valueText"] as const) {
+      const text = resolveText(feature, tag, keys[tag]);
+      if (!text) {
+        continue;
+      }
+      if (id) {
+        featureTexts[tag].set(`#${id}`, text);
+      }
+      if (!featureTexts[tag].has(keys[tag])) {
+        featureTexts[tag].set(keys[tag], text);
+      }
+    }
+  }
+}
+
+// Only all-caps features are customer facing.
+function describeFeatures(node: Node): string | undefined {
+  const lines = get("./features/feature", node).flatMap((feature) => {
+    const name = getString("./@name", feature) ?? "";
+    if (name !== name.toUpperCase() || name === "NUMMER") {
+      return [];
+    }
+    const value = getString("./@value", feature);
+    const valueText = resolveText(feature, "valueText", `${name}=${value}`);
+    if (!valueText && !value) {
+      return [];
+    }
+    if (name === "LANGTEXT" || name === "ARTIKELTEXT") {
+      return [valueText ?? value];
+    }
+    const nameText = resolveText(feature, "nameText", name) ?? name;
+    return [`${nameText}: ${valueText ?? value}`];
+  });
+  return lines.length ? lines.join("\n") : undefined;
+}
+
+function getDescription(node: Node): string {
+  return (
+    describeFeatures(node) ??
+    getString("./description[@type='long']/text[@lang='de']", node) ??
+    ""
+  );
 }
 
 function getObxPrice(node: Node): number | null {
@@ -106,9 +182,7 @@ function createSubItems(
         unitPrice: {
           netAmount: getItemPrice(node),
         },
-        description:
-          getString(`./description[@type='features']/text[@lang='de']`, node) ||
-          "",
+        description: getDescription(node),
         quantity: 1,
       }),
     ),
@@ -189,11 +263,7 @@ function createLineItem(
       name: name,
       description:
         prefix +
-        (getString(
-          "./description[@type='features']/text[@lang='de']",
-          context,
-        ) ??
-          getString("./description[@type='long']/text[@lang='de']", context)) +
+        getDescription(context) +
         (!includeDescription && subItems.length
           ? `\n\n${subItems[0].name}\n${subItems[0].description}`
           : ""),
@@ -225,6 +295,7 @@ function aggregateDuplicates<T extends CustomLineItem | SubLineItem>(
     const item = items.find(
       (item) =>
         item.name === curr.name &&
+        item.description === curr.description &&
         item.unitPrice?.netAmount === curr.unitPrice?.netAmount,
     );
     if (item?.quantity) {
@@ -249,6 +320,7 @@ function aggregateDuplicateLists(
         const item = items.find(
           (item) =>
             item[0].name === curr[0].name &&
+            item[0].description === curr[0].description &&
             item[0].unitPrice?.netAmount === curr[0].unitPrice?.netAmount,
         );
         if (!item) {
@@ -330,6 +402,7 @@ function processDocument(
   includeDescription: boolean,
   groupLineItems: boolean,
 ): LineItem[] {
+  collectFeatureTexts(parsed);
   return aggregateDuplicateLists(
     getPrefix(parsed).flatMap(([prefix, root]) =>
       get("./bskArticle", root).map((context) =>
