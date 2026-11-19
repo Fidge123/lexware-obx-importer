@@ -160,13 +160,12 @@ async function cleanupOldBranches(): Promise<void> {
 }
 
 async function main() {
-  const command = process.argv[2];
+  const arg = process.argv[2];
 
-  if (command === "cleanup") {
+  if (arg === "cleanup") {
     await cleanupOldBranches();
   } else {
-    const branch = await getCurrentBranch();
-    await uploadExamples(branch);
+    await uploadExamples(arg || (await getCurrentBranch()));
   }
 }
 
