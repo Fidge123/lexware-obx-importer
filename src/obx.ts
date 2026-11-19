@@ -107,16 +107,20 @@ function describeFeatures(node: Node): string | undefined {
     ) {
       return [];
     }
-    const nameText = resolveText(feature, "nameText", name);
     const value = getString("./@value", feature);
-    const valueText = resolveText(feature, "valueText", `${name}=${value}`);
-    if (!nameText || nameText === name || (!valueText && !value)) {
+    const valueText =
+      resolveText(feature, "valueText", `${name}=${value}`) ?? value;
+    if (!valueText) {
       return [];
     }
     if (name === "LANGTEXT" || name === "ARTIKELTEXT") {
-      return [valueText ?? value];
+      return [valueText];
     }
-    return [`${nameText}: ${valueText ?? value}`];
+    const nameText = resolveText(feature, "nameText", name);
+    if (!nameText || nameText === name) {
+      return [];
+    }
+    return [`${nameText}: ${valueText}`];
   });
   return lines.length ? lines.join("\n") : undefined;
 }

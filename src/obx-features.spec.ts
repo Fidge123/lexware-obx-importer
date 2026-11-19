@@ -93,6 +93,19 @@ test("feature texts are resolved by id reference and by earlier occurrence", () 
   ]);
 });
 
+test("long texts are kept without a German feature name", () => {
+  const [item] = payload(
+    article(
+      "735-00139",
+      `<feature name="ARTIKELTEXT" value="735-00139" flags="1" nameText="feature.999">
+        <valueText lang="de">Gasart: Argon (Ar)</valueText>
+      </feature>`,
+    ),
+  ) as CustomLineItem[];
+
+  expect(item.description).toBe("Gasart: Argon (Ar)");
+});
+
 test("articles without all-caps features fall back to the long description", () => {
   const [item] = payload(article("471-00003", "")) as CustomLineItem[];
 
