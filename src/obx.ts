@@ -80,15 +80,14 @@ function getPos(room: Node): [string, Node][] {
   ]);
 }
 
-function getPrefix(parsed: Document): [string, Node][] {
-  const rooms = get("/cutBuffer/items/bskFolder", parsed);
+function getFolderRoots(folder: Node): [string, Node][] {
+  const label = getString("./label[@lang='de']", folder);
+  return [[label ? `${label}\n` : "", folder], ...getPos(folder)];
+}
 
-  if (rooms.length) {
-    return rooms.length === 1
-      ? getPos(rooms[0])
-      : rooms.flatMap((room) => getPos(room));
-  }
-  return [["", get("/cutBuffer/items", parsed)[0]]];
+function getPrefix(parsed: Document): [string, Node][] {
+  const items = get("/cutBuffer/items", parsed)[0];
+  return [...get("./bskFolder", items).flatMap(getFolderRoots), ["", items]];
 }
 
 function createSubItems(
