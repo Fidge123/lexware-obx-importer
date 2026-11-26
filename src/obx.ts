@@ -30,6 +30,11 @@ export interface PriceMismatch {
   listPrice: number;
 }
 
+export interface ZeroPrice {
+  artNr: string;
+  name: string;
+}
+
 function iterate(xpathResult: XPathResult): Node[] {
   const array: Node[] = [];
   let node = xpathResult.iterateNext();
@@ -371,6 +376,45 @@ export function computeShippingInputs(
   };
 }
 
+function documents(parsed: Document | Record<string, Document>): Document[] {
+  return "documentElement" in parsed
+    ? [parsed as Document]
+    : Object.values(parsed as Record<string, Document>);
+}
+
+export function findZeroPrices(
+  parsed: Document | Record<string, Document>,
+  priceListMap: Map<string, number>,
+  priceSourceValue: PriceSource,
+  xpath: XPathEvaluator = new XPathEvaluator(),
+): ZeroPrice[] {
+  evaluator = xpath;
+  priceList = priceListMap;
+  priceSource = priceSourceValue;
+
+  const zeroPrices = new Map<string, ZeroPrice>();
+  for (const doc of documents(parsed)) {
+    for (const node of get("//bskArticle", doc)) {
+      const artNr = getString("./artNr[@type='final']", node) ?? "";
+      if (
+        zeroPrices.has(artNr) ||
+        planningHelpers.has(artNr.toUpperCase()) ||
+        getItemPrice(node) !== 0
+      ) {
+        continue;
+      }
+      zeroPrices.set(artNr, {
+        artNr,
+        name:
+          getString("./description[@type='short']/text[@lang='de']", node) ??
+          "",
+      });
+    }
+  }
+
+  return [...zeroPrices.values()];
+}
+
 export function findPriceMismatches(
   parsed: Document | Record<string, Document>,
   priceListMap: Map<string, number>,
@@ -381,13 +425,9 @@ export function findPriceMismatches(
     return [];
   }
 
-  const docs =
-    "documentElement" in parsed
-      ? [parsed as Document]
-      : Object.values(parsed as Record<string, Document>);
   const mismatches = new Map<string, PriceMismatch>();
 
-  for (const doc of docs) {
+  for (const doc of documents(parsed)) {
     for (const node of get("//bskArticle", doc)) {
       const artNr = getString("./artNr[@type='final']", node);
       if (!artNr || mismatches.has(artNr)) {

@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { DOMParser } from "@xmldom/xmldom";
 import xpath from "xpath";
 
-import { createPayload, findPriceMismatches } from "./obx.ts";
+import { createPayload, findPriceMismatches, findZeroPrices } from "./obx.ts";
 import type { CustomLineItem, TextLineItem } from "./types.ts";
 
 const x = xpath as unknown as XPathEvaluator;
@@ -114,4 +114,37 @@ test("price list prices replace obx prices when chosen", () => {
     "1x Artikel C | 100-00003 | je 275.00 EUR",
   );
   expect((lineItems[2] as CustomLineItem).unitPrice.netAmount).toBe(352);
+});
+
+test("warns about articles without obx price when using obx prices", () => {
+  const doc = parseXml(`<cutBuffer><items>
+    ${article("100-00003", "Artikel C", "NaN")}
+    ${article("100-00005", "Artikel E", "0.0")}
+    ${article("100-00005", "Artikel E", "0.0")}
+    ${article("100-00004", "Artikel D", "300.0")}
+  </items></cutBuffer>`);
+
+  expect(findZeroPrices(doc, priceList, "obx", x)).toEqual([
+    { artNr: "100-00003", name: "Artikel C" },
+    { artNr: "100-00005", name: "Artikel E" },
+  ]);
+});
+
+test("price list prices resolve zero prices when chosen", () => {
+  const doc = parseXml(`<cutBuffer><items>
+    ${article("100-00003", "Artikel C", "NaN")}
+    ${article("100-00005", "Artikel E", "0.0")}
+  </items></cutBuffer>`);
+
+  expect(findZeroPrices(doc, priceList, "priceList", x)).toEqual([
+    { artNr: "100-00005", name: "Artikel E" },
+  ]);
+});
+
+test("planning helpers need no price of their own", () => {
+  const doc = parseXml(`<cutBuffer><items>
+    ${article("TEILPLANNUNG_TP", "Planungshilfe", "", article("100-00004", "Artikel D", "300.0"))}
+  </items></cutBuffer>`);
+
+  expect(findZeroPrices(doc, priceList, "obx", x)).toEqual([]);
 });
