@@ -13,6 +13,8 @@ const planningHelpers = new Map([
   ["TEILPLANNUNG_TP", "Tischplatte individuell"],
 ]);
 
+export const shippingName = "Frachtkosten und Verbringung";
+
 let evaluator: XPathEvaluator;
 let multiplier: number;
 let nonDiscountedArtNrs: Set<string>;
@@ -26,6 +28,11 @@ export interface PriceMismatch {
   name: string;
   obxPrice: number | null;
   listPrice: number;
+}
+
+export interface ZeroPrice {
+  artNr: string;
+  name: string;
 }
 
 function iterate(xpathResult: XPathResult): Node[] {
@@ -80,15 +87,14 @@ function getPos(room: Node): [string, Node][] {
   ]);
 }
 
-function getPrefix(parsed: Document): [string, Node][] {
-  const rooms = get("/cutBuffer/items/bskFolder", parsed);
+function getFolderRoots(folder: Node): [string, Node][] {
+  const label = getString("./label[@lang='de']", folder);
+  return [[label ? `${label}\n` : "", folder], ...getPos(folder)];
+}
 
-  if (rooms.length) {
-    return rooms.length === 1
-      ? getPos(rooms[0])
-      : rooms.flatMap((room) => getPos(room));
-  }
-  return [["", get("/cutBuffer/items", parsed)[0]]];
+function getPrefix(parsed: Document): [string, Node][] {
+  const items = get("/cutBuffer/items", parsed)[0];
+  return [...get("./bskFolder", items).flatMap(getFolderRoots), ["", items]];
 }
 
 function createSubItems(
@@ -280,7 +286,7 @@ function getShippingCosts(volumes: number[], weights: number[]): LineItem {
 
   return {
     type: "custom",
-    name: "Frachtkosten und Verbringung",
+    name: shippingName,
     description: `Volumen: ${volumes
       .filter((d) => d)
       .reduce((s, v) => s + v, 0)
@@ -340,7 +346,7 @@ function processDocument(
   );
 }
 
-function calculateRoomTotal(lineItems: LineItem[]): number {
+export function netTotal(lineItems: LineItem[]): number {
   return lineItems.reduce((total, item) => {
     if (
       "type" in item &&
@@ -370,6 +376,45 @@ export function computeShippingInputs(
   };
 }
 
+function documents(parsed: Document | Record<string, Document>): Document[] {
+  return "documentElement" in parsed
+    ? [parsed as Document]
+    : Object.values(parsed as Record<string, Document>);
+}
+
+export function findZeroPrices(
+  parsed: Document | Record<string, Document>,
+  priceListMap: Map<string, number>,
+  priceSourceValue: PriceSource,
+  xpath: XPathEvaluator = new XPathEvaluator(),
+): ZeroPrice[] {
+  evaluator = xpath;
+  priceList = priceListMap;
+  priceSource = priceSourceValue;
+
+  const zeroPrices = new Map<string, ZeroPrice>();
+  for (const doc of documents(parsed)) {
+    for (const node of get("//bskArticle", doc)) {
+      const artNr = getString("./artNr[@type='final']", node) ?? "";
+      if (
+        zeroPrices.has(artNr) ||
+        planningHelpers.has(artNr.toUpperCase()) ||
+        getItemPrice(node) !== 0
+      ) {
+        continue;
+      }
+      zeroPrices.set(artNr, {
+        artNr,
+        name:
+          getString("./description[@type='short']/text[@lang='de']", node) ??
+          "",
+      });
+    }
+  }
+
+  return [...zeroPrices.values()];
+}
+
 export function findPriceMismatches(
   parsed: Document | Record<string, Document>,
   priceListMap: Map<string, number>,
@@ -380,13 +425,9 @@ export function findPriceMismatches(
     return [];
   }
 
-  const docs =
-    "documentElement" in parsed
-      ? [parsed as Document]
-      : Object.values(parsed as Record<string, Document>);
   const mismatches = new Map<string, PriceMismatch>();
 
-  for (const doc of docs) {
+  for (const doc of documents(parsed)) {
     for (const node of get("//bskArticle", doc)) {
       const artNr = getString("./artNr[@type='final']", node);
       if (!artNr || mismatches.has(artNr)) {
@@ -464,7 +505,7 @@ export function createPayload(
       );
       allLineItems.push(...roomLineItems);
 
-      const roomTotal = calculateRoomTotal(roomLineItems);
+      const roomTotal = netTotal(roomLineItems);
 
       allLineItems.push({
         type: "text",

@@ -23,12 +23,15 @@ import { NonDiscountedWarningDialog } from "./components/NonDiscountedWarningDia
 import { ObxVersionDialog } from "./components/ObxVersionDialog.tsx";
 import { PriceMismatchDialog } from "./components/PriceMismatchDialog.tsx";
 import { SettingsModal } from "./components/SettingsModal.tsx";
+import { ZeroPriceDialog } from "./components/ZeroPriceDialog.tsx";
 import {
   computeShippingInputs,
   createPayload,
   findPriceMismatches,
+  findZeroPrices,
   type PriceMismatch,
   type PriceSource,
+  type ZeroPrice,
 } from "./obx.ts";
 import {
   defaultSafeBskXmlVersion,
@@ -77,6 +80,9 @@ export default function App() {
   const [priceSource, setPriceSource] = useState<PriceSource>("obx");
   const [priceMismatches, setPriceMismatches] = useState<PriceMismatch[]>([]);
   const [priceDialogOpen, setPriceDialogOpen] = useState(false);
+  const [zeroPrices, setZeroPrices] = useState<ZeroPrice[]>([]);
+  const [zeroPriceDialogOpen, setZeroPriceDialogOpen] = useState(false);
+  const [shippingCalculated, setShippingCalculated] = useState(false);
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
   const [safeObxVersion, setSafeObxVersion] = useState(
     localStorage.getItem("safeBskXmlVersion") ?? defaultSafeBskXmlVersion,
@@ -124,6 +130,12 @@ export default function App() {
     setPriceMismatches(mismatches);
     setPriceDialogOpen(mismatches.length > 0);
   }, [xmlDocs, priceList]);
+
+  useEffect(() => {
+    const zero = findZeroPrices(xmlDocs, priceList, priceSource);
+    setZeroPrices(zero);
+    setZeroPriceDialogOpen(zero.length > 0);
+  }, [xmlDocs, priceList, priceSource]);
 
   useEffect(() => {
     const unsafe = findUnsafeObxVersions(xmlDocs, safeObxVersion);
@@ -229,6 +241,7 @@ export default function App() {
         }
       }
 
+      setShippingCalculated(apiPrice !== null);
       setPayload(newPayload);
       calculateNonDiscountedStats(newPayload);
     })();
@@ -386,8 +399,19 @@ export default function App() {
         }}
       />
 
+      <ZeroPriceDialog
+        isOpen={zeroPriceDialogOpen && !priceDialogOpen && !versionDialogOpen}
+        zeroPrices={zeroPrices}
+        onClose={() => setZeroPriceDialogOpen(false)}
+      />
+
       <NonDiscountedWarningDialog
-        isOpen={warningDialogOpen && !priceDialogOpen && !versionDialogOpen}
+        isOpen={
+          warningDialogOpen &&
+          !zeroPriceDialogOpen &&
+          !priceDialogOpen &&
+          !versionDialogOpen
+        }
         onClose={() => setWarningDialogOpen(false)}
         onApplySurcharge={handleApplyNonDiscountedSurcharge}
         count={nonDiscountedStats.count}
@@ -432,6 +456,7 @@ export default function App() {
       )}
       <LineItemsRenderer
         payload={payload}
+        shippingCalculated={shippingCalculated}
         onItemDeleted={handleItemDeleted}
         onItemChanged={handleItemChanged}
       />
