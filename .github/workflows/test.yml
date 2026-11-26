@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
   test:
@@ -23,6 +24,24 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Promote examples of the merged pull request to main
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+        run: |
+          branch=$(gh api "repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" \
+            --jq '[.[] | select(.merged_at != null and .head.repo.full_name == "${{ github.repository }}")][0].head.ref // empty')
+          if [ -z "$branch" ]; then
+            echo "No merged pull request for this commit"
+            exit 0
+          fi
+          bun run scripts/download-r2.ts "$branch"
+          bun run scripts/sync-r2.ts "${{ github.ref_name }}"
 
       - name: Download test examples from R2
         env:
