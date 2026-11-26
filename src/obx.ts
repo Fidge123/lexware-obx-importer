@@ -13,6 +13,8 @@ const planningHelpers = new Map([
   ["TEILPLANNUNG_TP", "Tischplatte individuell"],
 ]);
 
+export const shippingName = "Frachtkosten und Verbringung";
+
 let evaluator: XPathEvaluator;
 let multiplier: number;
 let nonDiscountedArtNrs: Set<string>;
@@ -279,7 +281,7 @@ function getShippingCosts(volumes: number[], weights: number[]): LineItem {
 
   return {
     type: "custom",
-    name: "Frachtkosten und Verbringung",
+    name: shippingName,
     description: `Volumen: ${volumes
       .filter((d) => d)
       .reduce((s, v) => s + v, 0)
@@ -339,7 +341,7 @@ function processDocument(
   );
 }
 
-function calculateRoomTotal(lineItems: LineItem[]): number {
+export function netTotal(lineItems: LineItem[]): number {
   return lineItems.reduce((total, item) => {
     if (
       "type" in item &&
@@ -463,7 +465,7 @@ export function createPayload(
       );
       allLineItems.push(...roomLineItems);
 
-      const roomTotal = calculateRoomTotal(roomLineItems);
+      const roomTotal = netTotal(roomLineItems);
 
       allLineItems.push({
         type: "text",

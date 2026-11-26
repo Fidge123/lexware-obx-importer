@@ -77,6 +77,7 @@ export default function App() {
   const [priceSource, setPriceSource] = useState<PriceSource>("obx");
   const [priceMismatches, setPriceMismatches] = useState<PriceMismatch[]>([]);
   const [priceDialogOpen, setPriceDialogOpen] = useState(false);
+  const [shippingCalculated, setShippingCalculated] = useState(false);
   const [warningDialogOpen, setWarningDialogOpen] = useState(false);
   const [safeObxVersion, setSafeObxVersion] = useState(
     localStorage.getItem("safeBskXmlVersion") ?? defaultSafeBskXmlVersion,
@@ -229,6 +230,7 @@ export default function App() {
         }
       }
 
+      setShippingCalculated(apiPrice !== null);
       setPayload(newPayload);
       calculateNonDiscountedStats(newPayload);
     })();
@@ -432,6 +434,7 @@ export default function App() {
       )}
       <LineItemsRenderer
         payload={payload}
+        shippingCalculated={shippingCalculated}
         onItemDeleted={handleItemDeleted}
         onItemChanged={handleItemChanged}
       />

@@ -1,4 +1,5 @@
 import { Disclosure, DisclosureButton } from "@headlessui/react";
+import { shippingName } from "../../obx.ts";
 import type {
   CustomLineItem,
   LineItem,
@@ -21,6 +22,7 @@ const hasEditableControls = (
 export function LineItemComponent({
   item,
   index,
+  shippingCalculated,
   onItemChanged,
   onItemDeleted,
 }: Props) {
@@ -45,6 +47,7 @@ export function LineItemComponent({
   const showNettoLabel = isCustomItem(item) && item.isNonDiscounted;
   const showPartialNettoLabel =
     isCustomItem(item) && item.hasNonDiscountedSubItems;
+  const isShipping = isCustomItem(item) && item.name === shippingName;
 
   return (
     <div
@@ -62,6 +65,16 @@ export function LineItemComponent({
               Teilweise NETTO
             </span>
           )}
+          {isShipping &&
+            (shippingCalculated ? (
+              <span className="font-semibold text-green-700 text-sm">
+                Frachtrechner
+              </span>
+            ) : (
+              <span className="font-semibold text-orange-600 text-sm">
+                Geschätzt
+              </span>
+            ))}
         </h3>
         {item.description && (
           <Disclosure>
@@ -101,6 +114,7 @@ export function LineItemComponent({
 interface Props {
   item: LineItem;
   index: number;
+  shippingCalculated: boolean;
   onItemChanged: (index: number, item: LineItem) => void;
   onItemDeleted: (index: number) => void;
 }
